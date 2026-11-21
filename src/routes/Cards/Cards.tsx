@@ -25,6 +25,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Field, Select, TextInput, MoneyInput } from '@/components/ui/form'
 import { PALETTE } from '@/domain/palette'
 import { BankBadge, BankPicker, bankById, colorChoices } from '@/domain/banks'
+import { CardBrandLogo, CardBrandPicker, normalizeBrand } from '@/domain/card-brands'
 import { formatBRL } from '@/lib/money'
 import { TransactionList } from '@/features/transactions/TransactionList'
 import { TransactionModal } from '@/features/transactions/TransactionModal'
@@ -114,7 +115,7 @@ export function Cards() {
                       <div>
                         <p className="font-medium text-app-fg">{c.nome}</p>
                         <p className="text-xs text-app-muted">
-                          {c.bandeira ? `${c.bandeira} · ` : ''}
+                          {c.bandeira && !normalizeBrand(c.bandeira) ? `${c.bandeira} · ` : ''}
                           {CARD_KIND_LABEL[c.tipo]}
                         </p>
                       </div>
@@ -136,6 +137,11 @@ export function Cards() {
                       <span>Disponível {formatBRL(disponivel)}</span>
                       <span>Limite {formatBRL(c.limite_centavos)}</span>
                     </div>
+                    {normalizeBrand(c.bandeira) && (
+                      <div className="mt-2 flex justify-end">
+                        <CardBrandLogo brand={c.bandeira} className="h-6" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -194,7 +200,7 @@ function CardFormModal({
 
   const [nome, setNome] = useState(card?.nome ?? '')
   const [contexto, setContexto] = useState<Context>(ctxInicial)
-  const [bandeira, setBandeira] = useState(card?.bandeira ?? '')
+  const [bandeira, setBandeira] = useState(normalizeBrand(card?.bandeira) ?? card?.bandeira ?? '')
   const [tipo, setTipo] = useState<CardKind>(card?.tipo ?? 'credito')
   const [limite, setLimite] = useState(card?.limite_centavos ?? 0)
   const [fech, setFech] = useState(card?.dia_fechamento ?? 20)
@@ -210,7 +216,7 @@ function CardFormModal({
     if (!open) return
     setNome(card?.nome ?? '')
     setContexto(card?.contexto ?? (viewMode === 'EMPRESARIAL' ? 'EMPRESARIAL' : 'PESSOAL'))
-    setBandeira(card?.bandeira ?? '')
+    setBandeira(normalizeBrand(card?.bandeira) ?? card?.bandeira ?? '')
     setTipo(card?.tipo ?? 'credito')
     setLimite(card?.limite_centavos ?? 0)
     setFech(card?.dia_fechamento ?? 20)
@@ -300,15 +306,11 @@ function CardFormModal({
               <option value="EMPRESARIAL">{CONTEXT_LABEL.EMPRESARIAL}</option>
             </Select>
           </Field>
-          <Field label="Bandeira" htmlFor="c-band">
-            <TextInput
-              id="c-band"
-              value={bandeira}
-              onChange={(e) => setBandeira(e.target.value)}
-              placeholder="Visa, Master…"
-            />
-          </Field>
         </div>
+
+        <Field label="Bandeira">
+          <CardBrandPicker value={bandeira} onChange={(id) => setBandeira(id ?? '')} />
+        </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Tipo" htmlFor="c-tipo">
