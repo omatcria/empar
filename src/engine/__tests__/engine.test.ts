@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { meiStatus } from '@/engine/mei'
 import type {
   Account,
   Budget,
@@ -459,7 +460,7 @@ function budget(o: Partial<Budget> = {}): Budget {
   }
 }
 
-const PREFS_ON = { venc_faturas: true, venc_contas: true, orcamento_80: true }
+const PREFS_ON = { venc_faturas: true, venc_contas: true, orcamento_80: true, mei_alertas: true }
 
 describe('computeNotifications', () => {
   const hoje = '2026-07-10'
@@ -561,7 +562,7 @@ describe('computeNotifications', () => {
     const compra = tx({ card_id: 'c', invoice_id: 'inv-x', valor_centavos: 100_00 })
     const off = computeNotifications({
       today: hoje,
-      prefs: { venc_faturas: false, venc_contas: false, orcamento_80: false },
+      prefs: { venc_faturas: false, venc_contas: false, orcamento_80: false, mei_alertas: false },
       invoices: [inv],
       transactions: [compra],
       budgets: [],
@@ -579,6 +580,46 @@ describe('computeNotifications', () => {
       existingKeys: new Set(['venc_fatura:inv-x']),
     })
     expect(jaVisto.filter((o) => o.tipo === 'venc_fatura')).toHaveLength(0)
+  })
+  describe('alertas do MEI', () => {
+    const base = {
+      today: hoje,
+      invoices: [],
+      transactions: [],
+      budgets: [],
+      categories: [],
+    }
+    const critico = { year: 2026, status: meiStatus(75_000_00, 81_000_00) }
+
+    it('gera 1 notificação mei com dedupe_key por ano e nível', () => {
+      const out = computeNotifications({ ...base, prefs: PREFS_ON, mei: critico })
+      const m = out.filter((o) => o.tipo === 'mei')
+      expect(m).toHaveLength(1)
+      expect(m[0].dedupe_key).toBe('mei-2026-critico')
+    })
+
+    it('não duplica quando a chave já existe', () => {
+      const out = computeNotifications({
+        ...base,
+        prefs: PREFS_ON,
+        mei: critico,
+        existingKeys: new Set(['mei-2026-critico']),
+      })
+      expect(out).toHaveLength(0)
+    })
+
+    it('respeita mei_alertas desligado e nível ok', () => {
+      expect(
+        computeNotifications({ ...base, prefs: { ...PREFS_ON, mei_alertas: false }, mei: critico }),
+      ).toHaveLength(0)
+      expect(
+        computeNotifications({
+          ...base,
+          prefs: PREFS_ON,
+          mei: { year: 2026, status: meiStatus(10_000_00, 81_000_00) },
+        }),
+      ).toHaveLength(0)
+    })
   })
 })
 

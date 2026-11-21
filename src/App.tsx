@@ -138,8 +138,8 @@ function AuthedApp() {
         notif.generate()
       })
     })
-    useDebts.getState().load(activeWorkspaceId).catch(() => {})
-    useWishlist.getState().load(activeWorkspaceId).catch(() => {})
+    useDebts.getState().load(activeWorkspaceId).catch((error) => console.error('Falha ao carregar dívidas', error))
+    useWishlist.getState().load(activeWorkspaceId).catch((error) => console.error('Falha ao carregar desejos', error))
     useReactions.getState().load(activeWorkspaceId).then(() => {
       useReactions.getState().subscribe()
     })

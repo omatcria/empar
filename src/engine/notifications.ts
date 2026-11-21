@@ -3,6 +3,7 @@ import type { Budget, Category, Invoice, Transaction } from '@/domain/types'
 import { formatBRL, type Cents } from '@/lib/money'
 import { categorySpend } from './balances'
 import { invoiceTotal } from './invoices'
+import { meiMessage, type MeiStatus } from './mei'
 
 /**
  * Geração DERIVADA de notificações — engine PURA (sem React/DB).
@@ -10,13 +11,14 @@ import { invoiceTotal } from './invoices'
  * A deduplicação é por `dedupe_key` (guardado em `notifications.meta.dedupe_key`).
  */
 
-export type NotifTipo = 'venc_fatura' | 'venc_conta' | 'orcamento_80'
+export type NotifTipo = 'venc_fatura' | 'venc_conta' | 'orcamento_80' | 'mei'
 
 /** Só os campos das preferências que interessam à geração. */
 export interface NotifPrefsLike {
   venc_faturas: boolean
   venc_contas: boolean
   orcamento_80: boolean
+  mei_alertas: boolean
 }
 
 export interface PendingNotification {
@@ -36,6 +38,8 @@ export interface ComputeNotificationsInput {
   transactions: Transaction[]
   budgets: Budget[]
   categories: Category[]
+  /** Situação do limite MEI do ano corrente (só quando o espaço tem MEI ativo). */
+  mei?: { year: number; status: MeiStatus }
   /** Mapa card_id → nome, para rótulos mais amigáveis. */
   cardNames?: Map<string, string>
   /** Chaves já notificadas (para não duplicar). */
@@ -147,6 +151,19 @@ export function computeNotifications(input: ComputeNotificationsInput): PendingN
         },
       })
     }
+  }
+
+  /* ---------- Limite do MEI (uma notificação por ano e nível) ---------- */
+  if (prefs.mei_alertas && input.mei && input.mei.status.nivel !== 'ok') {
+    const { year, status } = input.mei
+    const msg = meiMessage(status, year)
+    push({
+      tipo: 'mei',
+      titulo: msg.titulo,
+      corpo: msg.texto,
+      dedupe_key: `mei-${year}-${status.nivel}`,
+      meta: { year, nivel: status.nivel, valor: status.valor, limite: status.limite },
+    })
   }
 
   return out

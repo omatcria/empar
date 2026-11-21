@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from '@/components/icons'
@@ -23,6 +23,7 @@ export function Modal({
   footer?: ReactNode
   className?: string
 }) {
+  const selectWasOpen = useRef(false)
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -47,7 +48,13 @@ export function Modal({
     >
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
+        onMouseDown={(e) => {
+          selectWasOpen.current = !!e.currentTarget.parentElement?.querySelector('[role="combobox"][aria-expanded="true"]')
+        }}
+        onClick={() => {
+          if (!selectWasOpen.current) onClose()
+          selectWasOpen.current = false
+        }}
       />
       <div
         className={cn(

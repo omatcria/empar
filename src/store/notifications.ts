@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import type { Notification, NotificationPrefUpdate, NotificationPref } from '@/domain/types'
 import { computeNotifications } from '@/engine'
+import { meiLimit, meiRevenue, meiStatus } from '@/engine/mei'
 import { todayISO } from '@/lib/cn'
 import { useAuth } from './auth'
 import { useWorkspace } from './workspace'
@@ -111,7 +112,7 @@ export const useNotifications = create<NotificationsState>((set, get) => ({
     const prefs = get().prefs
     if (!uid || !ws || !prefs) return
     // Nada ligado → não faz consulta nenhuma.
-    if (!prefs.venc_faturas && !prefs.venc_contas && !prefs.orcamento_80) return
+    if (!prefs.venc_faturas && !prefs.venc_contas && !prefs.orcamento_80 && !prefs.mei_alertas) return
 
     const { invoices, transactions, budgets, categories, cards } = useData.getState()
 
@@ -127,6 +128,16 @@ export const useNotifications = create<NotificationsState>((set, get) => ({
         .filter((k): k is string => typeof k === 'string'),
     )
 
+    const wsRow = useWorkspace.getState().workspaces.find((w) => w.id === ws)
+    let mei: { year: number; status: ReturnType<typeof meiStatus> } | undefined
+    if (wsRow?.mei_ativo) {
+      const today = todayISO()
+      const year = Number(today.slice(0, 4))
+      const { realizado } = meiRevenue(transactions, categories, year)
+      const limite = meiLimit(wsRow.mei_limite_anual_centavos, wsRow.mei_abertura, year)
+      mei = { year, status: meiStatus(realizado, limite) }
+    }
+
     const pending = computeNotifications({
       today: todayISO(),
       prefs,
@@ -136,6 +147,7 @@ export const useNotifications = create<NotificationsState>((set, get) => ({
       categories,
       cardNames: new Map(cards.map((c) => [c.id, c.nome])),
       existingKeys,
+      mei,
     })
     if (pending.length === 0) return
 

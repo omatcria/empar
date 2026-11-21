@@ -7,7 +7,7 @@ import type {
   DebtInstallment,
   DebtInstallmentUpdate,
 } from '@/domain/types'
-import { buildDebtInstallments } from '@/engine/debts'
+import { assertParcelas, buildDebtInstallments } from '@/engine/debts'
 import { ownerCols } from './owner'
 
 type AddDebtInput = Omit<DebtInsert, 'user_id' | 'workspace_id'> & {
@@ -19,6 +19,7 @@ interface DebtsState {
   debts: Debt[]
   installments: DebtInstallment[]
   loaded: boolean
+  loadError: string | null
   load: (workspaceId: string) => Promise<void>
   reset: () => void
   addDebt: (input: AddDebtInput) => Promise<Debt>
@@ -36,18 +37,24 @@ const todayISO = () => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
+let loadSequence = 0
 export const useDebts = create<DebtsState>((set, get) => ({
   debts: [],
   installments: [],
   loaded: false,
+  loadError: null,
 
   load: async (workspaceId) => {
+    const sequence = ++loadSequence
+    set({ debts: [], installments: [], loaded: false, loadError: null })
     const [debts, installments] = await Promise.all([
       supabase.from('debts').select('*').eq('workspace_id', workspaceId),
       supabase.from('debt_installments').select('*').eq('workspace_id', workspaceId),
     ])
+    if (sequence !== loadSequence) return
     const err = debts.error || installments.error
     if (err) {
+      set({ loadError: err.message })
       console.error('Falha ao carregar dívidas:', err.message)
       throw new Error(err.message)
     }
@@ -58,10 +65,12 @@ export const useDebts = create<DebtsState>((set, get) => ({
     })
   },
 
-  reset: () => set({ debts: [], installments: [], loaded: false }),
+  reset: () => { loadSequence++; set({ debts: [], installments: [], loaded: false, loadError: null }) },
 
   addDebt: async (input) => {
     const { parcelas, primeiro_vencimento, ...debtInput } = input
+    assertParcelas(parcelas)
+    const installments = buildDebtInstallments(debtInput.valor_acordo_centavos, parcelas, primeiro_vencimento)
     const owner = ownerCols()
     const { data: debt, error } = await supabase
       .from('debts')
@@ -69,7 +78,7 @@ export const useDebts = create<DebtsState>((set, get) => ({
       .select()
       .single()
     if (error) throw error
-    const rows = buildDebtInstallments(debt.valor_acordo_centavos, parcelas, primeiro_vencimento).map(
+    const rows = installments.map(
       (p) => ({ ...p, debt_id: debt.id, pago: false, ...owner }),
     )
     const { data: created, error: instErr } = await supabase
@@ -77,7 +86,8 @@ export const useDebts = create<DebtsState>((set, get) => ({
       .insert(rows)
       .select()
     if (instErr) {
-      await supabase.from('debts').delete().eq('id', debt.id)
+      const rollback = await supabase.from('debts').delete().eq('id', debt.id)
+      if (rollback.error) throw new Error('A dívida foi criada sem parcelas e não foi possível desfazê-la. Recarregue a página antes de tentar novamente.')
       throw instErr
     }
     set((s) => ({
@@ -121,38 +131,17 @@ export const useDebts = create<DebtsState>((set, get) => ({
   },
 
   regenerateUnpaid: async (debtId, n, primeiroVencimento) => {
-    const debt = get().debts.find((d) => d.id === debtId)
-    if (!debt) throw new Error('Dívida não encontrada')
-    const paid = get().installments.filter((i) => i.debt_id === debtId && i.pago)
-    const pagoTotal = paid.reduce((s, i) => s + i.valor_centavos, 0)
-    const restante = Math.max(0, debt.valor_acordo_centavos - pagoTotal)
-    const maxNumero = paid.reduce((m, i) => Math.max(m, i.numero), 0)
-
-    const { error: delErr } = await supabase
-      .from('debt_installments')
-      .delete()
-      .eq('debt_id', debtId)
-      .eq('pago', false)
-    if (delErr) throw delErr
-
-    const owner = ownerCols()
-    const rows = buildDebtInstallments(restante, n, primeiroVencimento).map((p) => ({
-      ...p,
-      numero: p.numero + maxNumero,
-      debt_id: debtId,
-      pago: false,
-      ...owner,
-    }))
-    const { data: created, error } = await supabase.from('debt_installments').insert(rows).select()
+    assertParcelas(n)
+    const { data, error } = await supabase.rpc('regenerate_debt_installments', {
+      _debt_id: debtId,
+      _n: n,
+      _first_due: primeiroVencimento,
+    })
     if (error) throw error
     set((s) => ({
-      installments: [
-        ...s.installments.filter((i) => i.debt_id !== debtId || i.pago),
-        ...(created ?? []),
-      ],
+      installments: [...s.installments.filter((i) => i.debt_id !== debtId), ...(data ?? [])],
     }))
   },
-
   payAll: async (debtId) => {
     const open = get().installments.filter((i) => i.debt_id === debtId && !i.pago)
     if (open.length === 0) return

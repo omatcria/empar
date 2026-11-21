@@ -1,3 +1,17 @@
-export function Wishlist() {
-  return <h1 className="text-xl font-bold text-app-fg">Lista de desejos</h1>
+import { useState } from 'react'
+import { Plus } from '@/components/icons'
+import { Button, Surface } from '@/components/ui/primitives'
+import { Select } from '@/components/ui/form'
+import { formatBRL } from '@/lib/money'
+import { useCanWrite } from '@/store/workspace'
+import { useWishlist } from '@/store/wishlist'
+import { AddWishModal } from '@/features/wishlist/AddWishModal'
+import { WishCategoryModal } from '@/features/wishlist/WishCategoryModal'
+import { WishCard } from '@/features/wishlist/WishCard'
+import { WishDetailModal } from '@/features/wishlist/WishDetailModal'
+export function Wishlist(){
+ const {items,categories,loaded,loadError}=useWishlist(),canWrite=useCanWrite();const [creating,setCreating]=useState(false),[managing,setManaging]=useState(false),[selected,setSelected]=useState<string|null>(null),[cat,setCat]=useState(''),[showBought,setShowBought]=useState(false),[sort,setSort]=useState('recentes');const active=items.filter(i=>!i.comprado),selectedItem=items.find(i=>i.id===selected);const visible=items.filter(i=>(showBought||!i.comprado)&&(!cat||i.category_id===cat)).sort((a,b)=>sort==='preco'?(a.preco_atual_centavos??Infinity)-(b.preco_atual_centavos??Infinity):sort==='queda'?((a.preco_atual_centavos??0)-(a.preco_inicial_centavos??0))-((b.preco_atual_centavos??0)-(b.preco_inicial_centavos??0)):b.created_at.localeCompare(a.created_at));const sum=active.reduce((s,i)=>s+(i.preco_atual_centavos??0),0),reduced=active.filter(i=>i.preco_atual_centavos!=null&&i.preco_inicial_centavos!=null&&i.preco_atual_centavos<i.preco_inicial_centavos),savings=reduced.reduce((s,i)=>s+(i.preco_inicial_centavos!-i.preco_atual_centavos!),0)
+ if(loadError)return <p role="alert">Não foi possível carregar os desejos: {loadError}</p>
+ if(!loaded)return <p>Carregando desejos…</p>
+ return <div className="space-y-5"><div className="flex justify-between items-center"><div><h1 className="text-xl font-bold">Lista de desejos</h1><p className="text-sm text-app-muted">Acompanhe produtos e preços.</p></div>{canWrite&&<Button icon={<Plus className="size-4"/>} onClick={()=>setCreating(true)}>Adicionar desejo</Button>}</div><div className="grid grid-cols-3 gap-3">{[['Total da lista',formatBRL(sum)],['Itens em queda',String(reduced.length)],['Economia',formatBRL(savings)]].map(([k,v])=><Surface key={k} className="p-4"><p className="text-xs text-app-muted">{k}</p><p className="text-lg font-semibold">{v}</p></Surface>)}</div><div className="flex flex-wrap gap-2"><Button size="sm" variant={!cat?'primary':'secondary'} onClick={()=>setCat('')}>Todas</Button>{categories.map(c=><Button key={c.id} size="sm" variant={cat===c.id?'primary':'secondary'} onClick={()=>setCat(c.id)}>{c.nome}</Button>)}{canWrite&&<Button size="sm" variant="ghost" onClick={()=>setManaging(true)}>Gerenciar categorias</Button>}</div><div className="flex gap-3 items-center"><label className="flex gap-2 text-sm"><input type="checkbox" checked={showBought} onChange={e=>setShowBought(e.target.checked)}/>Mostrar comprados</label><div className="w-44"><Select aria-label="Ordenar desejos" value={sort} onChange={e=>setSort(e.target.value)}><option value="recentes">Mais recentes</option><option value="preco">Menor preço</option><option value="queda">Maior queda</option></Select></div></div>{visible.length?<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{visible.map(i=><WishCard key={i.id} item={i} onClick={()=>setSelected(i.id)}/>)}</div>:<Surface className="p-10 text-center text-sm text-app-muted">Nenhum desejo nesta lista.</Surface>}{creating&&<AddWishModal onClose={()=>setCreating(false)}/ >}{managing&&<WishCategoryModal onClose={()=>setManaging(false)}/ >}{selectedItem&&<WishDetailModal item={selectedItem} canWrite={canWrite} onClose={()=>setSelected(null)}/>}</div>
 }

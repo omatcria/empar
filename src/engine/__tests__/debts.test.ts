@@ -69,3 +69,23 @@ describe('debtsTotals', () => {
     expect(t).toEqual({ totalAcordos: 150000, pago: 100000, restante: 50000, economia: 50000 })
   })
 })
+
+import { assertParcelas } from '../debts'
+describe('assertParcelas', () => {
+  it('rejeita 0, negativos e não inteiros', () => {
+    expect(() => assertParcelas(0)).toThrow('Informe ao menos 1 parcela.')
+    expect(() => assertParcelas(-2)).toThrow()
+    expect(() => assertParcelas(1.5)).toThrow()
+  })
+  it('aceita 1 ou mais', () => {
+    expect(() => assertParcelas(1)).not.toThrow()
+    expect(() => assertParcelas(12)).not.toThrow()
+  })
+})
+
+describe('buildDebtInstallments — entradas inválidas', () => {
+  it('rejeita quantidades inválidas antes de gerar parcelas', () => {
+    expect(() => buildDebtInstallments(10000, 0, '2026-01-01')).toThrow()
+    expect(() => buildDebtInstallments(10000, 1.5, '2026-01-01')).toThrow()
+  })
+})

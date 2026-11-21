@@ -1318,6 +1318,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      regenerate_debt_installments: { Args: { _debt_id: string; _n: number; _first_due: string }; Returns: Database['public']['Tables']['debt_installments']['Row'][] }
       accept_invite: { Args: { _token: string }; Returns: string }
       has_write: { Args: { _ws: string }; Returns: boolean }
       is_member: { Args: { _ws: string }; Returns: boolean }

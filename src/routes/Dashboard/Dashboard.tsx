@@ -126,7 +126,7 @@ export function Dashboard() {
             />
           </>
         )}
-        <MeiCard />
+        {viewMode !== 'PESSOAL' && <MeiCard />}
 
         {(viewMode === 'PESSOAL' || viewMode === 'CONSOLIDADO') && (
           <StatCard

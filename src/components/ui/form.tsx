@@ -83,6 +83,7 @@ export function MoneyInput({
   placeholder = 'R$ 0,00',
   className,
   autoFocus,
+  disabled,
 }: {
   cents: Cents
   onChangeCents: (c: Cents) => void
@@ -90,6 +91,7 @@ export function MoneyInput({
   placeholder?: string
   className?: string
   autoFocus?: boolean
+  disabled?: boolean
 }) {
   // Inicializa a partir de `cents` só na montagem — o campo é a fonte da
   // verdade durante a digitação. Reformatar a cada tecla (via effect ligado
@@ -113,6 +115,7 @@ export function MoneyInput({
       id={id}
       inputMode="decimal"
       autoFocus={autoFocus}
+      disabled={disabled}
       className={cn(controlBase, 'tnum text-right text-base font-semibold', className)}
       placeholder={placeholder}
       value={text}

@@ -280,7 +280,7 @@ export function TransactionModal({
           tipo={tipo}
           valorCentavos={valor}
           data={data}
-          editingValorCentavos={transaction?.valor_centavos}
+          editingValorCentavos={transaction?.pago && transaction.contexto === 'EMPRESARIAL' && transaction.tipo === 'RECEITA' && transaction.data.startsWith(`${todayISO().slice(0, 4)}-`) && !transaction.transfer_id && !categories.find(c => c.id === transaction.category_id)?.sistema ? transaction.valor_centavos : 0}
         />
 
         {/* Contexto */}

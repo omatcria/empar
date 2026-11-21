@@ -275,14 +275,30 @@ export const useData = create<DataState>((set, get) => ({
   resetWorkspace: async () => {
     const ws = get().workspaceId
     if (!ws) throw new Error('Espaço de trabalho não carregado')
+    const imagePaths: string[] = []
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await supabase.from('wishlist_items').select('imagem_url').eq('workspace_id', ws).order('id').range(offset, offset + 999)
+      if (error) throw new Error('Não foi possível preparar a remoção das imagens. Nenhum dado foi apagado.')
+      imagePaths.push(...data.flatMap(item => item.imagem_url?.startsWith('wishlist-storage:') ? [item.imagem_url.slice('wishlist-storage:'.length)] : []))
+      if (data.length < 1000) break
+    }
     const { error } = await supabase.rpc('reset_workspace_data', { _ws: ws })
     if (error) throw new Error(error.message)
-    await get().loadAll(ws)
-    await Promise.all([
-      useDebts.getState().load(ws),
-      useWishlist.getState().load(ws),
-      useNotifications.getState().load(),
-    ])
+    try {
+      for (let offset = 0; offset < imagePaths.length; offset += 100) {
+        const result = await supabase.storage.from('wishlist-images').remove(imagePaths.slice(offset, offset + 100))
+        if (result.error) throw new Error('Falha ao remover imagens')
+      }
+      await get().loadAll(ws)
+      if (get().error) throw new Error(get().error!)
+      await Promise.all([
+        useDebts.getState().load(ws),
+        useWishlist.getState().load(ws),
+        useNotifications.getState().load(),
+      ])
+    } catch {
+      throw new Error('Os dados foram apagados, mas houve uma falha ao remover imagens ou recarregar. Atualize a página; não repita o reset.')
+    }
   },
 
   /* -------- Perfil -------- */

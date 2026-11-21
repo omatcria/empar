@@ -193,6 +193,14 @@ export function parseProductHtml(html: string, pageUrl: string): ParsedProduct {
       if (preco_centavos != null) break
     }
   }
+  if (preco_centavos == null) {
+    const tags = html.match(/<[^>]+\bitemprop\s*=\s*["']price["'][^>]*>/gi) ?? []
+    for (const tag of tags) {
+      const attrs = parseAttrs(tag)
+      preco_centavos = parsePriceToCents(attrs.content ?? attrs.value)
+      if (preco_centavos != null) break
+    }
+  }
 
   let loja: string | null = null
   try {

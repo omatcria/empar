@@ -63,3 +63,8 @@ describe('parseProductHtml', () => {
     expect(p.imagem_url).toBeNull()
   })
 })
+
+it('lê preço no atributo itemprop em elementos visíveis', () => {
+  const product=parseProductHtml('<title>Fone</title><span itemprop="price" content="129.90">R$ 129,90</span>', 'https://loja.example/p')
+  expect(product.preco_centavos).toBe(12990)
+})

@@ -33,6 +33,7 @@ export function Settings() {
   const [avatarPath, setAvatarPath] = useState(profile?.avatar_url ?? null)
   const [savingPerfil, setSavingPerfil] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [backupError, setBackupError] = useState('')
 
   const reservadoPorEnvelope = useMemo(
     () =>
@@ -244,7 +245,7 @@ export function Settings() {
           <Button
             variant="secondary"
             icon={<Download className="size-4" />}
-            onClick={() => exportBackup(store)}
+            onClick={() => { setBackupError(''); void exportBackup(store).catch((e: Error) => setBackupError(e.message)) }}
           >
             Exportar backup (JSON)
           </Button>
@@ -273,6 +274,7 @@ export function Settings() {
             </Button>
           )}
         </div>
+        {backupError && <p role="alert" className="mt-2 text-sm text-expense">{backupError}</p>}
       </Surface>
 
       <DangerZone />

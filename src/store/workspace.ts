@@ -5,6 +5,7 @@ import type {
   MemberRole,
   Workspace,
   WorkspaceInvite,
+  WorkspaceUpdate,
   WorkspaceMember,
   WorkspaceWithRole,
 } from '@/domain/types'
@@ -20,6 +21,7 @@ interface WorkspaceState {
   reset: () => void
   setActive: (id: string) => Promise<void>
   renameWorkspace: (id: string, nome: string) => Promise<void>
+  updateWorkspace: (id: string, patch: WorkspaceUpdate) => Promise<void>
 
   loadMembers: () => Promise<void>
   loadInvites: () => Promise<void>
@@ -88,6 +90,19 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     if (error) throw error
     set((s) => ({
       workspaces: s.workspaces.map((w) => (w.id === id ? { ...w, nome: data.nome } : w)),
+    }))
+  },
+
+  updateWorkspace: async (id, patch) => {
+    const { data, error } = await supabase
+      .from('workspaces')
+      .update(patch)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    set((s) => ({
+      workspaces: s.workspaces.map((w) => (w.id === id ? { ...w, ...data } : w)),
     }))
   },
 

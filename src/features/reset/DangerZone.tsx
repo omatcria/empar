@@ -125,7 +125,7 @@ export function DangerZone(): ReactElement | null {
             variant="secondary"
             size="sm"
             icon={<Download className="size-4" />}
-            onClick={() => exportBackup(useData.getState())}
+            onClick={() => { void exportBackup(useData.getState()).catch((e: Error) => setErro(e.message)) }}
           >
             Baixar backup antes
           </Button>

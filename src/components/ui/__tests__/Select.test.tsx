@@ -368,3 +368,18 @@ describe('Select', () => {
     expect(screen.getByRole('combobox', { name: 'Categoria' })).toHaveAttribute('id', 'cat')
   })
 })
+
+it('fecha apenas o Select ao clicar no fundo do modal', async () => {
+  const { Modal } = await import('../Modal')
+  const onClose = vi.fn()
+  render(<Modal open onClose={onClose} title="Teste"><Select value="a" onChange={() => {}}><option value="a">Alfa</option></Select></Modal>)
+  fireEvent.click(screen.getByRole('combobox'))
+  const scrim = screen.getByRole('dialog').firstElementChild!
+  fireEvent.mouseDown(scrim)
+  fireEvent.click(scrim)
+  expect(screen.queryByRole('listbox')).toBeNull()
+  expect(onClose).not.toHaveBeenCalled()
+  fireEvent.mouseDown(scrim)
+  fireEvent.click(scrim)
+  expect(onClose).toHaveBeenCalledTimes(1)
+})

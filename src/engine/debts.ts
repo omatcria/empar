@@ -11,6 +11,7 @@ export function buildDebtInstallments(
   n: number,
   primeiroVencimento: string,
 ): { numero: number; valor_centavos: Cents; vencimento: string }[] {
+  assertParcelas(n)
   const base = parseISO(primeiroVencimento)
   const dia = base.getDate()
   return splitCents(total, n).map((valor, i) => {
@@ -55,4 +56,11 @@ export function debtsTotals(debts: Debt[], parcelas: DebtInstallment[]) {
     0,
   )
   return { totalAcordos, pago, restante: totalAcordos - pago, economia }
+}
+
+/** Valida o número de parcelas antes de qualquer chamada ao banco. */
+export function assertParcelas(n: number): void {
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error('Informe ao menos 1 parcela.')
+  }
 }

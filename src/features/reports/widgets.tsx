@@ -28,6 +28,7 @@ import { Surface, ProgressBar } from '@/components/ui/primitives'
 import { Money } from '@/components/ui/Money'
 import { ContextBadge } from '@/components/ui/ContextBadge'
 import { PieDespesas, type PieSlice } from '@/components/charts/PieDespesas'
+import { MeiCard } from '@/features/mei/MeiCard'
 import { UpcomingDues } from '@/features/dues/UpcomingDues'
 import { formatBRL, formatBRLCompact, type Cents } from '@/lib/money'
 
@@ -322,6 +323,7 @@ export const WIDGETS: WidgetDef[] = [
   { id: 'pizza', title: 'Despesas por categoria (pizza)', span: 'full', Component: WidgetPizza },
   { id: 'a-pagar', title: 'A pagar / a receber', span: 'full', Component: WidgetAPagar },
   { id: 'metas', title: 'Progresso das metas', span: 'full', Component: WidgetMetas },
+  { id: 'mei', title: 'Limite do MEI', span: 'full', Component: MeiCard },
 ]
 
 export const WIDGET_MAP = new Map(WIDGETS.map((w) => [w.id, w]))
