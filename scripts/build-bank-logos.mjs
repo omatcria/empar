@@ -48,7 +48,10 @@ export function sanitizeSvg(input) {
     .replace(/<sodipodi:[\w-]+\b[^>]*\/>/g, '')
     .replace(/<sodipodi:([\w-]+)\b[^>]*>[\s\S]*?<\/sodipodi:\1>/g, '')
 
-  const usesPrefix = (p) => new RegExp(`[\s<]${p}:[\w-]+`).test(s.replace(/xmlns:\w+="[^"]*"/g, ''))
+  // atributos de editor saem antes de decidir quais prefixos xmlns:* ainda são usados
+  s = s.replace(/\s(?:sodipodi|inkscape):[\w-]+\s*=\s*(?:"[^"]*"|'[^']*')/g, '')
+
+  const usesPrefix = (p) => new RegExp(String.raw`[\s<]${p}:[\w-]+`).test(s.replace(/xmlns:\w+="[^"]*"/g, ''))
 
   let first = true
   s = s.replace(TAG_RE, (_m, name, attrs, selfClose) => {
