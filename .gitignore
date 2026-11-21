@@ -1,0 +1,32 @@
+# Segredos — NUNCA versionar
+.mcp.json
+.env
+.env.*
+!.env.example
+
+# Dependências / build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Build incremental do TypeScript
+*.tsbuildinfo
+
+# Artefatos de teste E2E
+.e2e/

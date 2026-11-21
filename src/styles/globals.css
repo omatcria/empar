@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Fustat:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+/* ============================================================
+   Design System — AbacatePay
+   Tailwind v4 · tokens semânticos · fonte Fustat · tema claro
+   Primária verde (#9EEA6C) · estados suaves
+   Contexto: PESSOAL azul · EMPRESARIAL violeta
+   ============================================================ */
+@theme {
+  /* Superfícies */
+  --color-app-bg: #f6f7f9; /* base-200 */
+  --color-app-surface: #ffffff; /* base-100 */
+  --color-app-surface-2: #f1f3f7; /* chips / inputs / base-300 */
+  --color-app-border: #e2e7f1; /* chart-grid */
+  --color-app-muted: #8a8aa3; /* chart-text-secondary */
+  --color-app-fg: #201f2b; /* base-content (texto principal) */
+  --color-app-fg2: #4b5563; /* texto secundário */
+
+  /* Marca / primária */
+  --color-primary: #9eea6c;
+  --color-primary-strong: #86d94f;
+  --color-primary-content: #1f3311;
+  --color-accent: #14b8a6;
+
+  /* Contexto */
+  --color-pessoal: #3b82f6;
+  --color-pessoal-strong: #2563eb;
+  --color-pessoal-soft: #e8f0ff;
+
+  --color-empresarial: #7c3aed;
+  --color-empresarial-strong: #6d28d9;
+  --color-empresarial-soft: #f2ebfe;
+
+  /* Financeiro (estados suaves) */
+  --color-income: #578546;
+  --color-income-soft: #f1ffd4;
+  --color-expense: #b83131;
+  --color-expense-soft: #ffeaea;
+  --color-warn: #b5850b;
+  --color-warn-soft: #fff6e9;
+
+  /* Raios */
+  --radius-field: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--color-app-bg);
+    color: var(--color-app-fg);
+    font-family: 'Fustat', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-primary) 45%, transparent);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-app-border) transparent;
+  }
+}
+
+@keyframes modal {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
