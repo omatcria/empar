@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './auth'
+import { ownerCols } from './owner'
 import type {
   Account,
   AccountInsert,
@@ -55,15 +56,6 @@ function requireUserId(): string {
   const id = useAuth.getState().user?.id
   if (!id) throw new Error('Usuário não autenticado')
   return id
-}
-
-/** Colunas de propriedade em todo insert: criador + espaço ativo. */
-function ownerCols(): { user_id: string; workspace_id: string } {
-  const user_id = useAuth.getState().user?.id
-  const workspace_id = useData.getState().workspaceId
-  if (!user_id) throw new Error('Usuário não autenticado')
-  if (!workspace_id) throw new Error('Nenhum espaço ativo')
-  return { user_id, workspace_id }
 }
 
 interface DataState {

@@ -17,6 +17,7 @@ import { Surface } from '@/components/ui/primitives'
 import { PieDespesas, type PieSlice } from '@/components/charts/PieDespesas'
 import { UpcomingDues } from '@/features/dues/UpcomingDues'
 import { mesRefLabel } from '@/engine/period'
+import { MeiCard } from '@/features/mei/MeiCard'
 import { cn } from '@/lib/cn'
 import type { Cents } from '@/lib/money'
 
@@ -125,6 +126,7 @@ export function Dashboard() {
             />
           </>
         )}
+        <MeiCard />
 
         {(viewMode === 'PESSOAL' || viewMode === 'CONSOLIDADO') && (
           <StatCard

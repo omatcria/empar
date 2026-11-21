@@ -7,6 +7,7 @@ import { CONTEXT_LABEL } from '@/domain/enums'
 import { Button } from '@/components/ui/primitives'
 import { Modal } from '@/components/ui/Modal'
 import { Field, Select, TextInput, MoneyInput } from '@/components/ui/form'
+import { MeiImpactAlert } from '@/features/mei/MeiImpactAlert'
 import { CategoryCombobox } from '@/components/ui/CategoryCombobox'
 import { cn, todayISO } from '@/lib/cn'
 import { formatBRL, type Cents } from '@/lib/money'
@@ -274,6 +275,13 @@ export function TransactionModal({
         <Field label="Valor" htmlFor="tx-valor" required>
           <MoneyInput id="tx-valor" cents={valor} onChangeCents={setValor} autoFocus />
         </Field>
+        <MeiImpactAlert
+          contexto={contexto}
+          tipo={tipo}
+          valorCentavos={valor}
+          data={data}
+          editingValorCentavos={transaction?.valor_centavos}
+        />
 
         {/* Contexto */}
         <Field label="Contexto">

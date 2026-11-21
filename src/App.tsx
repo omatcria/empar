@@ -5,6 +5,8 @@ import { useData } from '@/store/data'
 import { useWorkspace, useActiveRole } from '@/store/workspace'
 import { useNotifications } from '@/store/notifications'
 import { useReactions } from '@/store/reactions'
+import { useDebts } from '@/store/debts'
+import { useWishlist } from '@/store/wishlist'
 import { Spinner } from '@/components/ui/primitives'
 import { Login } from '@/routes/Login/Login'
 import { AppShell } from '@/components/layout/AppShell'
@@ -48,6 +50,13 @@ const Investments = lazy(() =>
   import('@/routes/Investments/Investments').then((m) => ({ default: m.Investments })),
 )
 
+const Debts = lazy(() =>
+  import('@/routes/Debts/Debts').then((m) => ({ default: m.Debts })),
+)
+const Wishlist = lazy(() =>
+  import('@/routes/Wishlist/Wishlist').then((m) => ({ default: m.Wishlist })),
+)
+
 export function App() {
   const { session, initializing, init } = useAuth()
   const ws = useData((s) => s.workspaceId)
@@ -64,6 +73,8 @@ export function App() {
       useNotifications.setState({ notifications: [], unreadCount: 0, prefs: null })
       useReactions.getState().unsubscribe()
       useReactions.setState({ reactions: [] })
+      useDebts.getState().reset()
+      useWishlist.getState().reset()
     }
   }, [session])
 
@@ -127,6 +138,8 @@ function AuthedApp() {
         notif.generate()
       })
     })
+    useDebts.getState().load(activeWorkspaceId).catch(() => {})
+    useWishlist.getState().load(activeWorkspaceId).catch(() => {})
     useReactions.getState().load(activeWorkspaceId).then(() => {
       useReactions.getState().subscribe()
     })
@@ -153,6 +166,8 @@ function AuthedApp() {
           <Route path="recorrencias" element={<Recurrences />} />
           <Route path="metas" element={<Goals />} />
           <Route path="investimentos" element={<Investments />} />
+          <Route path="dividas" element={<Debts />} />
+          <Route path="desejos" element={<Wishlist />} />
           <Route path="relatorios" element={<Reports />} />
           <Route path="membros" element={<Members />} />
           <Route path="config" element={<Settings />} />

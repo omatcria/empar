@@ -58,6 +58,16 @@ import {
   IconUsers,
   IconWallet,
   IconX,
+  IconReportMoney,
+  IconHeart,
+  IconGift,
+  IconExternalLink,
+  IconLink,
+  IconShieldExclamation,
+  IconInfoCircle,
+  IconBuildingStore,
+  IconCircleCheck,
+  IconArrowDown,
 } from '@tabler/icons-react'
 
 /** Tipo genérico de um componente de ícone. */
@@ -121,4 +131,14 @@ export {
   IconUsers as Users,
   IconWallet as Wallet,
   IconX as X,
+  IconReportMoney as HandCoins,
+  IconHeart as Heart,
+  IconGift as Gift,
+  IconExternalLink as ExternalLink,
+  IconLink as Link,
+  IconShieldExclamation as ShieldAlert,
+  IconInfoCircle as Info,
+  IconBuildingStore as Store,
+  IconCircleCheck as CircleCheck,
+  IconArrowDown as ArrowDown,
 }

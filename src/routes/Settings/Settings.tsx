@@ -10,6 +10,8 @@ import { formatBRL } from '@/lib/money'
 import type { Category, Context, TxType } from '@/domain/types'
 import { Button, Surface } from '@/components/ui/primitives'
 import { Field, TextInput, MoneyInput } from '@/components/ui/form'
+import { MeiSettings } from '@/features/mei/MeiSettings'
+import { DangerZone } from '@/features/reset/DangerZone'
 import { Avatar } from '@/components/ui/Avatar'
 import { PALETTE } from '@/domain/palette'
 import type { Cents } from '@/lib/money'
@@ -192,6 +194,8 @@ export function Settings() {
         </div>
       </Surface>
 
+      <MeiSettings />
+
       {/* Notificações */}
       {prefs && (
         <Surface className="p-5">
@@ -202,6 +206,8 @@ export function Settings() {
               { id: 'venc_faturas', label: 'Vencimento de Faturas' },
               { id: 'venc_contas', label: 'Vencimento de Contas' },
               { id: 'orcamento_80', label: 'Alerta de 80% do Orçamento' },
+              { id: 'mei_alertas', label: 'Alertas do limite MEI' },
+              { id: 'wishlist_precos', label: 'Quedas de preço na lista de desejos' },
             ].map(pref => {
               const checked = prefs[pref.id as keyof typeof prefs] as boolean
               return (
@@ -267,6 +273,8 @@ export function Settings() {
           )}
         </div>
       </Surface>
+
+      <DangerZone />
 
       {/* Conta */}
       <Surface className="p-5">
