@@ -20,7 +20,7 @@ import { ContextBadge } from '@/components/ui/ContextBadge'
 import { Modal } from '@/components/ui/Modal'
 import { Field, Select, TextInput, MoneyInput } from '@/components/ui/form'
 import { PALETTE } from '@/domain/palette'
-import { BankBadge, BankPicker } from '@/domain/banks'
+import { BankBadge, BankPicker, bankById, colorChoices } from '@/domain/banks'
 import { formatBRL, type Cents } from '@/lib/money'
 import { todayISO } from '@/lib/cn'
 
@@ -323,17 +323,24 @@ function AccountFormModal({
         </div>
 
         <Field label="Banco">
-          <BankPicker value={banco} onChange={setBanco} />
+          <BankPicker
+            value={banco}
+            onChange={(id) => {
+              setBanco(id)
+              setCor(bankById(id)?.cor ?? cor)
+            }}
+          />
         </Field>
 
         <Field label="Cor">
           <div className="flex flex-wrap gap-2">
-            {PALETTE.map((c) => (
+            {colorChoices(banco, PALETTE).map(({ cor: c, doBanco }) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setCor(c)}
-                aria-label={`Cor ${c}`}
+                title={doBanco ? 'Cor do banco' : undefined}
+                aria-label={doBanco ? 'Cor do banco' : `Cor ${c}`}
                 className={
                   'size-8 rounded-lg transition-transform ' +
                   (cor === c

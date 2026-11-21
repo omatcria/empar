@@ -28,11 +28,32 @@ export const BANKS: Bank[] = [
   { id: 'next', nome: 'Next', cor: '#00A868', short: 'Nx' },
   { id: 'santander', nome: 'Santander', cor: '#EC0000', short: 'Sa' },
   { id: 'will', nome: 'Will Bank', cor: '#FFE600', short: 'Wi', dark: true },
+  { id: 'cora', nome: 'Cora', cor: '#FE3E6D', short: 'Co' },
+  { id: 'stone', nome: 'Stone', cor: '#00A868', short: 'St' },
+  { id: 'infinitepay', nome: 'InfinitePay', cor: '#00EE26', short: 'IP', dark: true },
+  { id: 'pagbank', nome: 'PagBank', cor: '#41B06E', short: 'PB' },
+  { id: 'btg', nome: 'BTG Pactual', cor: '#001E61', short: 'BTG' },
+  { id: 'sicoob', nome: 'Sicoob', cor: '#003641', short: 'Sic' },
+  { id: 'sicredi', nome: 'Sicredi', cor: '#146E37', short: 'Sic' },
+  { id: 'pan', nome: 'Banco Pan', cor: '#0AB2F9', short: 'Pan' },
 ]
 
 const MAP = new Map(BANKS.map((b) => [b.id, b]))
 export function bankById(id?: string | null): Bank | undefined {
   return id ? MAP.get(id) : undefined
+}
+
+/** Opções da fileira de cores: a cor do banco vem primeiro quando não está na paleta. */
+export function colorChoices(
+  bancoId: string | null | undefined,
+  palette: readonly string[],
+): { cor: string; doBanco: boolean }[] {
+  const list = palette.map((cor) => ({ cor, doBanco: false }))
+  const bankCor = bankById(bancoId)?.cor
+  if (bankCor && !palette.some((p) => p.toLowerCase() === bankCor.toLowerCase())) {
+    list.unshift({ cor: bankCor, doBanco: true })
+  }
+  return list
 }
 
 /**
