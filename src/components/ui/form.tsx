@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import type {
   InputHTMLAttributes,
   ReactNode,
-  SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react'
 import { cn } from '@/lib/cn'
 import { formatBRL, parseBRLToCents, type Cents } from '@/lib/money'
 
-const controlBase =
+/** Base visual dos campos (inputs, gatilho do Select, textarea). */
+export const controlBase =
   'w-full h-11 rounded-xl border border-app-border bg-app-surface-2 px-3 text-sm text-app-fg ' +
   'placeholder:text-app-muted focus:outline-none focus:ring-2 focus:ring-pessoal focus:border-transparent ' +
   'disabled:opacity-50 transition-shadow'
@@ -58,17 +58,9 @@ export function TextInput({
 }
 
 /* ---------------- Select ---------------- */
-export function Select({
-  className,
-  children,
-  ...rest
-}: SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select className={cn(controlBase, 'cursor-pointer', className)} {...rest}>
-      {children}
-    </select>
-  )
-}
+// Listbox próprio (portal, busca, teclado) — mesma API do <select> nativo.
+export { Select } from './Select'
+export type { SelectProps, SelectChangeEvent } from './Select'
 
 /* ---------------- Textarea ---------------- */
 export function Textarea({

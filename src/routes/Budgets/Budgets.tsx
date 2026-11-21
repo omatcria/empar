@@ -9,7 +9,7 @@ import type { Category, Context } from '@/domain/types'
 import { Button, Surface, ProgressBar } from '@/components/ui/primitives'
 import { ContextBadge } from '@/components/ui/ContextBadge'
 import { Modal } from '@/components/ui/Modal'
-import { Field, MoneyInput } from '@/components/ui/form'
+import { Field, MoneyInput, Select } from '@/components/ui/form'
 import { CategoryIcon } from '@/domain/icons-catalog'
 import { CategoryFormModal } from '@/features/categories/CategoryFormModal'
 import { formatBRL, type Cents } from '@/lib/money'
@@ -236,18 +236,13 @@ function BudgetModal({
     >
       <div className="flex flex-col gap-4">
         <Field label="Categoria" htmlFor="bud-cat">
-          <select
-            id="bud-cat"
-            value={catId}
-            onChange={(e) => setCatId(e.target.value)}
-            className="h-11 w-full cursor-pointer rounded-xl border border-app-border bg-app-surface-2 px-3 text-sm text-app-fg focus:outline-none focus:ring-2 focus:ring-pessoal"
-          >
+          <Select id="bud-cat" value={catId} onChange={(e) => setCatId(e.target.value)}>
             {despesasCtx.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
         <Field label="Limite do mês" htmlFor="bud-lim" hint="Deixe em R$ 0,00 para remover o limite.">
           <MoneyInput id="bud-lim" cents={limite} onChangeCents={setLimite} autoFocus />
