@@ -67,12 +67,12 @@ export function AddWishModal({ item, onClose }: { item?: WishlistItem; onClose: 
       chooseFile(new File([blob], 'imagem-colada', { type }))
     } catch { setError('Não foi possível acessar a área de transferência. Toque na área de colagem e use Colar no teclado.') }
   }
-  async function read(address = url) {
+  async function read(address = url, browserFallback = false) {
     if (!validUrl(address)) { setError('Informe um link http ou https válido.'); return }
     const id = ++readId.current
     setReading(true); setError('')
     try {
-      const r = await scrape(address)
+      const r = await scrape(address, browserFallback)
       if (id !== readId.current || latestUrl.current !== address) return
       if (!r.ok) { setError(`Não conseguimos ler esta loja automaticamente — preencha os campos abaixo.${r.motivo ? ` ${r.motivo}` : ''}`); return }
       setTitle(v => v || r.titulo || ''); setDesc(v => v || r.descricao || '')
@@ -99,7 +99,7 @@ export function AddWishModal({ item, onClose }: { item?: WishlistItem; onClose: 
   }
   const imageValid = !image || image.startsWith('wishlist-storage:') || validUrl(image)
   return <><Modal open onClose={onClose} title={item ? 'Editar desejo' : 'Adicionar desejo'} footer={<><Button variant="ghost" onClick={onClose}>Cancelar</Button><Button disabled={busy || !title.trim() || !validUrl(url) || (!file && !imageValid)} loading={busy} onClick={() => void save()}>Salvar</Button></>}><div className="space-y-4" onPaste={pasteImage}>
-    <Field label="Link do produto" htmlFor="wish-url" required><div className="flex gap-2"><TextInput id="wish-url" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..."/><Button variant="secondary" disabled={busy || reading} onClick={() => void read()}>{reading ? 'Buscando…' : 'Buscar'}</Button></div></Field>
+    <Field label="Link do produto" htmlFor="wish-url" required><div className="flex gap-2"><TextInput id="wish-url" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..."/><Button variant="secondary" disabled={busy || reading} onClick={() => void read(url, true)}>{reading ? 'Buscando…' : 'Buscar'}</Button></div></Field>
     {error && <p role="status" className="text-sm text-app-muted">{error}</p>}
     <Field label="Título" htmlFor="wish-title" required><TextInput id="wish-title" value={title} onChange={e => setTitle(e.target.value)}/></Field>
     <Field label="Descrição" htmlFor="wish-desc"><Textarea id="wish-desc" value={desc} onChange={e => setDesc(e.target.value)}/></Field>

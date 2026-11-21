@@ -8,7 +8,7 @@ export type ScrapeResult = { ok: boolean; titulo?: string | null; descricao?: st
 interface WishlistState {
   items: WishlistItem[]; categories: WishlistCategory[]; history: WishlistPricePoint[]; loaded: boolean; loadError: string | null
   load: (workspaceId: string) => Promise<void>; reset: () => void
-  scrape: (url: string) => Promise<ScrapeResult>
+  scrape: (url: string, browserFallback?: boolean) => Promise<ScrapeResult>
   addItem: (input: Omit<WishlistItemInsert, 'user_id' | 'workspace_id'>) => Promise<WishlistItem>
   updateItem: (id: string, patch: WishlistItemUpdate) => Promise<void>; deleteItem: (id: string) => Promise<void>
   refreshPrice: (id: string) => Promise<{ok: boolean; motivo?: string; alerta: PriceAlert}>
@@ -32,8 +32,8 @@ export const useWishlist = create<WishlistState>((set,get) => ({
     set({ categories: categories.data ?? [], items: items.data ?? [], history: history.data ?? [], loaded: true })
   },
   reset: () => { loadSequence++; set({ items: [], categories: [], history: [], loaded: false, loadError: null }) },
-  scrape: async (url) => {
-    try { const { data, error } = await supabase.functions.invoke('wishlist-scrape', { body: { url } }); return error ? { ok: false, motivo: error.message } : data as ScrapeResult }
+  scrape: async (url, browserFallback = false) => {
+    try { const { data, error } = await supabase.functions.invoke('wishlist-scrape', { body: { url, browser_fallback: browserFallback } }); return error ? { ok: false, motivo: error.message } : data as ScrapeResult }
     catch { return { ok: false, motivo: 'Não foi possível acessar o leitor.' } }
   },
   addItem: async (input) => {
@@ -61,7 +61,7 @@ export const useWishlist = create<WishlistState>((set,get) => ({
   refreshPrice: async (id) => {
     const item = get().items.find(i => i.id === id)
     if (!item) return {ok:false,motivo:'Desejo não encontrado',alerta:null}
-    const result = await get().scrape(item.url)
+    const result = await get().scrape(item.url, true)
     if (!result.ok || result.preco_centavos == null) return {ok:false,motivo:result.motivo ?? 'Preço não encontrado',alerta:null}
     const price = result.preco_centavos, alerta = priceAlert(item.preco_atual_centavos,price,item.preco_alvo_centavos)
     const point = await supabase.from('wishlist_price_history').insert({workspace_id:item.workspace_id,item_id:id,preco_centavos:price}).select().single()

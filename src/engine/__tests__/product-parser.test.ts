@@ -68,3 +68,16 @@ it('lê preço no atributo itemprop em elementos visíveis', () => {
   const product=parseProductHtml('<title>Fone</title><span itemprop="price" content="129.90">R$ 129,90</span>', 'https://loja.example/p')
   expect(product.preco_centavos).toBe(12990)
 })
+
+it('separa o nome e o preço embutidos no título Open Graph', () => {
+  const html = '<meta property="og:title" content="Par De Corrediça Telescópica 35cm Reforçada Cor Prateado - R$ 12,87"><meta property="og:image" content="https://images.example/item.webp">'
+  const product = parseProductHtml(html, 'https://www.mercadolivre.com.br/p/teste')
+  expect(product.titulo).toBe('Par De Corrediça Telescópica 35cm Reforçada Cor Prateado')
+  expect(product.preco_centavos).toBe(1287)
+  expect(product.imagem_url).toBe('https://images.example/item.webp')
+})
+
+it('prioriza o preço explícito da página em vez do preço no título', () => {
+  const html = '<meta property="og:title" content="Produto - R$ 12,87"><span itemprop="price" content="15.99"></span>'
+  expect(parseProductHtml(html, 'https://loja.example/p').preco_centavos).toBe(1599)
+})

@@ -178,7 +178,9 @@ export function parseProductHtml(html: string, pageUrl: string): ParsedProduct {
   const meta = readMetas(html)
   const titleTag = /<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? null
 
-  const titulo = clean(ld.titulo) ?? clean(meta['og:title']) ?? clean(meta['twitter:title']) ?? clean(titleTag)
+  const socialTitle = clean(meta['og:title']) ?? clean(meta['twitter:title'])
+  const titleWithPrice = socialTitle?.match(/^(.*?)\s+[-–|]\s+R\$\s*([\d.,]+)\s*$/i)
+  const titulo = clean(ld.titulo) ?? (titleWithPrice ? clean(titleWithPrice[1]) : socialTitle) ?? clean(titleTag)
   const descricao =
     clean(ld.descricao) ?? clean(meta['og:description']) ?? clean(meta['twitter:description']) ?? clean(meta['description'])
   const imagem_url = resolveUrl(
@@ -201,6 +203,7 @@ export function parseProductHtml(html: string, pageUrl: string): ParsedProduct {
       if (preco_centavos != null) break
     }
   }
+  if (preco_centavos == null && titleWithPrice) preco_centavos = parsePriceToCents(titleWithPrice[2])
 
   let loja: string | null = null
   try {
