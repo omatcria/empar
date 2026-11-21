@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -297,6 +297,113 @@ export type Database = {
           },
         ]
       }
+      debt_installments: {
+        Row: {
+          debt_id: string
+          id: string
+          numero: number
+          pago: boolean
+          pago_em: string | null
+          user_id: string
+          valor_centavos: number
+          vencimento: string
+          workspace_id: string
+        }
+        Insert: {
+          debt_id: string
+          id?: string
+          numero: number
+          pago?: boolean
+          pago_em?: string | null
+          user_id: string
+          valor_centavos: number
+          vencimento: string
+          workspace_id: string
+        }
+        Update: {
+          debt_id?: string
+          id?: string
+          numero?: number
+          pago?: boolean
+          pago_em?: string | null
+          user_id?: string
+          valor_centavos?: number
+          vencimento?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_installments_debt_id_fkey"
+            columns: ["debt_id"]
+            isOneToOne: false
+            referencedRelation: "debts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debt_installments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      debts: {
+        Row: {
+          contexto: Database["public"]["Enums"]["context_enum"]
+          created_at: string
+          credor: string
+          data_acordo: string | null
+          descricao: string | null
+          id: string
+          observacoes: string | null
+          origem: string
+          updated_at: string
+          user_id: string
+          valor_acordo_centavos: number
+          valor_original_centavos: number | null
+          workspace_id: string
+        }
+        Insert: {
+          contexto?: Database["public"]["Enums"]["context_enum"]
+          created_at?: string
+          credor: string
+          data_acordo?: string | null
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          origem?: string
+          updated_at?: string
+          user_id: string
+          valor_acordo_centavos: number
+          valor_original_centavos?: number | null
+          workspace_id: string
+        }
+        Update: {
+          contexto?: Database["public"]["Enums"]["context_enum"]
+          created_at?: string
+          credor?: string
+          data_acordo?: string | null
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          origem?: string
+          updated_at?: string
+          user_id?: string
+          valor_acordo_centavos?: number
+          valor_original_centavos?: number | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           contexto: Database["public"]["Enums"]["context_enum"]
@@ -533,22 +640,28 @@ export type Database = {
       }
       notification_prefs: {
         Row: {
+          mei_alertas: boolean
           orcamento_80: boolean
           user_id: string
           venc_contas: boolean
           venc_faturas: boolean
+          wishlist_precos: boolean
         }
         Insert: {
+          mei_alertas?: boolean
           orcamento_80?: boolean
           user_id: string
           venc_contas?: boolean
           venc_faturas?: boolean
+          wishlist_precos?: boolean
         }
         Update: {
+          mei_alertas?: boolean
           orcamento_80?: boolean
           user_id?: string
           venc_contas?: boolean
           venc_faturas?: boolean
+          wishlist_precos?: boolean
         }
         Relationships: []
       }
@@ -918,6 +1031,167 @@ export type Database = {
           },
         ]
       }
+      wishlist_categories: {
+        Row: {
+          cor: string
+          created_at: string
+          icone: string
+          id: string
+          nome: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          icone?: string
+          id?: string
+          nome: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          icone?: string
+          id?: string
+          nome?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_categories_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wishlist_items: {
+        Row: {
+          category_id: string | null
+          comprado: boolean
+          comprado_em: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          imagem_url: string | null
+          loja: string | null
+          monitorar: boolean
+          preco_alvo_centavos: number | null
+          preco_atual_centavos: number | null
+          preco_inicial_centavos: number | null
+          preco_minimo_centavos: number | null
+          titulo: string
+          ultima_verificacao: string | null
+          ultimo_erro: string | null
+          updated_at: string
+          url: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          comprado?: boolean
+          comprado_em?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          imagem_url?: string | null
+          loja?: string | null
+          monitorar?: boolean
+          preco_alvo_centavos?: number | null
+          preco_atual_centavos?: number | null
+          preco_inicial_centavos?: number | null
+          preco_minimo_centavos?: number | null
+          titulo: string
+          ultima_verificacao?: string | null
+          ultimo_erro?: string | null
+          updated_at?: string
+          url: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          category_id?: string | null
+          comprado?: boolean
+          comprado_em?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          imagem_url?: string | null
+          loja?: string | null
+          monitorar?: boolean
+          preco_alvo_centavos?: number | null
+          preco_atual_centavos?: number | null
+          preco_inicial_centavos?: number | null
+          preco_minimo_centavos?: number | null
+          titulo?: string
+          ultima_verificacao?: string | null
+          ultimo_erro?: string | null
+          updated_at?: string
+          url?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wishlist_items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wishlist_price_history: {
+        Row: {
+          id: string
+          item_id: string
+          preco_centavos: number
+          verificado_em: string
+          workspace_id: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          preco_centavos: number
+          verificado_em?: string
+          workspace_id: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          preco_centavos?: number
+          verificado_em?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_price_history_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wishlist_price_history_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_invites: {
         Row: {
           created_at: string
@@ -1010,6 +1284,9 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          mei_abertura: string | null
+          mei_ativo: boolean
+          mei_limite_anual_centavos: number
           nome: string
           owner_id: string
           updated_at: string
@@ -1017,6 +1294,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          mei_abertura?: string | null
+          mei_ativo?: boolean
+          mei_limite_anual_centavos?: number
           nome: string
           owner_id: string
           updated_at?: string
@@ -1024,6 +1304,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          mei_abertura?: string | null
+          mei_ativo?: boolean
+          mei_limite_anual_centavos?: number
           nome?: string
           owner_id?: string
           updated_at?: string
@@ -1039,6 +1322,11 @@ export type Database = {
       has_write: { Args: { _ws: string }; Returns: boolean }
       is_member: { Args: { _ws: string }; Returns: boolean }
       is_owner: { Args: { _ws: string }; Returns: boolean }
+      reset_workspace_data: { Args: { _ws: string }; Returns: undefined }
+      seed_workspace_defaults: {
+        Args: { _uid: string; _ws: string }
+        Returns: undefined
+      }
     }
     Enums: {
       account_type_enum:
@@ -1071,12 +1359,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1100,11 +1388,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1125,11 +1413,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1150,11 +1438,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1167,11 +1455,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -41,6 +41,13 @@ export type TransactionReaction = Tables<'transaction_reactions'>
 export type ReactionEmoji = Enums<'reaction_emoji'>
 export type Investment = Tables<'investments'>
 export type InvestmentMovement = Tables<'investment_movements'>
+/** Dívida (acordo) — módulo isolado: nunca gera transações nem entra em saldos. */
+export type Debt = Tables<'debts'>
+export type DebtInstallment = Tables<'debt_installments'>
+export type WishlistCategory = Tables<'wishlist_categories'>
+export type WishlistItem = Tables<'wishlist_items'>
+/** Ponto do histórico de preço de um item da lista de desejos. */
+export type WishlistPricePoint = Tables<'wishlist_price_history'>
 
 /** Tipo de produto de investimento. */
 export type InvestmentTipo =
@@ -74,6 +81,11 @@ export type TransactionInsert = TablesInsert<'transactions'>
 export type BudgetInsert = TablesInsert<'budgets'>
 export type GoalInsert = TablesInsert<'goals'>
 export type TaxProvisionInsert = TablesInsert<'tax_provisions'>
+export type DebtInsert = TablesInsert<'debts'>
+export type DebtInstallmentInsert = TablesInsert<'debt_installments'>
+export type WishlistCategoryInsert = TablesInsert<'wishlist_categories'>
+export type WishlistItemInsert = TablesInsert<'wishlist_items'>
+export type WishlistPricePointInsert = TablesInsert<'wishlist_price_history'>
 
 /* ---------- Update ---------- */
 export type AccountUpdate = TablesUpdate<'accounts'>
@@ -84,6 +96,11 @@ export type TransactionUpdate = TablesUpdate<'transactions'>
 export type BudgetUpdate = TablesUpdate<'budgets'>
 export type GoalUpdate = TablesUpdate<'goals'>
 export type TaxProvisionUpdate = TablesUpdate<'tax_provisions'>
+export type WorkspaceUpdate = TablesUpdate<'workspaces'>
+export type DebtUpdate = TablesUpdate<'debts'>
+export type DebtInstallmentUpdate = TablesUpdate<'debt_installments'>
+export type WishlistCategoryUpdate = TablesUpdate<'wishlist_categories'>
+export type WishlistItemUpdate = TablesUpdate<'wishlist_items'>
 export type ActivityLogInsert = TablesInsert<'activity_log'>
 export type NotificationInsert = TablesInsert<'notifications'>
 export type NotificationPrefUpdate = TablesUpdate<'notification_prefs'>
