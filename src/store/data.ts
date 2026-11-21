@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './auth'
 import { ownerCols } from './owner'
+import { useDebts } from './debts'
+import { useWishlist } from './wishlist'
+import { useNotifications } from './notifications'
 import type {
   Account,
   AccountInsert,
@@ -80,6 +83,8 @@ interface DataState {
 
   loadAll: (workspaceId: string) => Promise<void>
   reset: () => void
+  /** Apaga todos os dados do espaço (RPC, só dono) e recarrega as stores. */
+  resetWorkspace: () => Promise<void>
 
   // Perfil
   updateProfile: (patch: Partial<Profile>) => Promise<void>
@@ -266,6 +271,19 @@ export const useData = create<DataState>((set, get) => ({
       investments: [],
       investmentMovements: [],
     }),
+
+  resetWorkspace: async () => {
+    const ws = get().workspaceId
+    if (!ws) throw new Error('Espaço de trabalho não carregado')
+    const { error } = await supabase.rpc('reset_workspace_data', { _ws: ws })
+    if (error) throw new Error(error.message)
+    await get().loadAll(ws)
+    await Promise.all([
+      useDebts.getState().load(ws),
+      useWishlist.getState().load(ws),
+      useNotifications.getState().load(),
+    ])
+  },
 
   /* -------- Perfil -------- */
   updateProfile: async (patch) => {

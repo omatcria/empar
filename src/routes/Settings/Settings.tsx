@@ -12,6 +12,7 @@ import { Button, Surface } from '@/components/ui/primitives'
 import { Field, TextInput, MoneyInput } from '@/components/ui/form'
 import { MeiSettings } from '@/features/mei/MeiSettings'
 import { DangerZone } from '@/features/reset/DangerZone'
+import { exportBackup } from '@/features/reset/backup'
 import { Avatar } from '@/components/ui/Avatar'
 import { PALETTE } from '@/domain/palette'
 import type { Cents } from '@/lib/money'
@@ -285,29 +286,6 @@ export function Settings() {
       </Surface>
     </div>
   )
-}
-
-/* ---------------- Backup ---------------- */
-function exportBackup(store: ReturnType<typeof useData.getState>) {
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    profile: store.profile,
-    accounts: store.accounts,
-    cards: store.cards,
-    invoices: store.invoices,
-    categories: store.categories,
-    transactions: store.transactions,
-    budgets: store.budgets,
-    goals: store.goals,
-    provisions: store.provisions,
-  }
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `financas-backup-${new Date().toISOString().slice(0, 10)}.json`
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 /* ---------------- Dados de exemplo ---------------- */
