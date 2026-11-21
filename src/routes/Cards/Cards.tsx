@@ -200,7 +200,7 @@ function CardFormModal({
 
   const [nome, setNome] = useState(card?.nome ?? '')
   const [contexto, setContexto] = useState<Context>(ctxInicial)
-  const [bandeira, setBandeira] = useState(normalizeBrand(card?.bandeira) ?? card?.bandeira ?? '')
+  const [bandeira, setBandeira] = useState(card?.bandeira ?? '')
   const [tipo, setTipo] = useState<CardKind>(card?.tipo ?? 'credito')
   const [limite, setLimite] = useState(card?.limite_centavos ?? 0)
   const [fech, setFech] = useState(card?.dia_fechamento ?? 20)
@@ -216,7 +216,7 @@ function CardFormModal({
     if (!open) return
     setNome(card?.nome ?? '')
     setContexto(card?.contexto ?? (viewMode === 'EMPRESARIAL' ? 'EMPRESARIAL' : 'PESSOAL'))
-    setBandeira(normalizeBrand(card?.bandeira) ?? card?.bandeira ?? '')
+    setBandeira(card?.bandeira ?? '')
     setTipo(card?.tipo ?? 'credito')
     setLimite(card?.limite_centavos ?? 0)
     setFech(card?.dia_fechamento ?? 20)

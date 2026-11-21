@@ -10,6 +10,7 @@ describe('normalizeBrand', () => {
     ['amex', 'amex'],
     ['Elo', 'elo'],
     ['hiper', 'hipercard'],
+    ['Visa Platinum Itaú', 'visa'],
     ['xyz', null],
     [null, null],
     [undefined, null],
