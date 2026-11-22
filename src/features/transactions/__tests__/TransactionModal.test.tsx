@@ -105,4 +105,78 @@ describe('TransactionModal', () => {
     fireEvent.click(screen.getByRole('option', { name: '3x' }))
     expect(screen.queryByRole('switch', { name: 'Repetir' })).toBeNull()
   })
+
+  const salvar = () => fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+  const digitar = () => fireEvent.change(screen.getByPlaceholderText('R$ 0,00'), { target: { value: '50,00' } })
+
+  it('Repetir em despesa na conta', async () => {
+    render(<TransactionModal open onClose={vi.fn()} />)
+    digitar()
+    fireEvent.click(screen.getByRole('switch', { name: 'Repetir' }))
+    salvar()
+    await waitFor(() => expect(h.addTransaction).toHaveBeenCalled())
+    expect(h.addRecurrence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        template: expect.objectContaining({ account_id: 'acc-1', card_id: null, pago: true }),
+      }),
+    )
+    expect(h.addTransaction).toHaveBeenCalledWith(expect.objectContaining({ recorrencia_id: 'rec-1' }))
+  })
+
+  it('Repetir em receita', async () => {
+    render(<TransactionModal open onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Receita' }))
+    digitar()
+    fireEvent.click(screen.getByRole('switch', { name: 'Repetir' }))
+    salvar()
+    await waitFor(() => expect(h.addTransaction).toHaveBeenCalled())
+    expect(h.addRecurrence).toHaveBeenCalledWith(
+      expect.objectContaining({ template: expect.objectContaining({ tipo: 'RECEITA' }) }),
+    )
+  })
+
+  it('conta pendente (data futura) leva pago false no template', async () => {
+    render(<TransactionModal open onClose={vi.fn()} />)
+    setData('2026-12-05')
+    digitar()
+    fireEvent.click(screen.getByRole('switch', { name: 'Repetir' }))
+    salvar()
+    await waitFor(() => expect(h.addTransaction).toHaveBeenCalled())
+    expect(h.addRecurrence).toHaveBeenCalledWith(
+      expect.objectContaining({ template: expect.objectContaining({ pago: false }) }),
+    )
+  })
+
+  it('cartão com data futura leva pago true no template', async () => {
+    render(<TransactionModal open onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Cartão de crédito' }))
+    setData('2026-12-05')
+    digitar()
+    fireEvent.click(screen.getByRole('switch', { name: 'Repetir' }))
+    salvar()
+    await waitFor(() => expect(h.addCardPurchase).toHaveBeenCalled())
+    expect(h.addRecurrence).toHaveBeenCalledWith(
+      expect.objectContaining({ template: expect.objectContaining({ pago: true }) }),
+    )
+  })
+
+  it('falha em addTransaction apaga a recorrência e mostra o erro', async () => {
+    h.addTransaction.mockRejectedValue(new Error('Erro na conta'))
+    render(<TransactionModal open onClose={vi.fn()} />)
+    digitar()
+    fireEvent.click(screen.getByRole('switch', { name: 'Repetir' }))
+    salvar()
+    await waitFor(() => expect(h.deleteRecurrence).toHaveBeenCalledWith('rec-1'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Erro na conta')
+  })
+
+  it('rollback que falha avisa para remover a recorrência', async () => {
+    h.addTransaction.mockRejectedValue(new Error('Erro na conta'))
+    h.deleteRecurrence.mockRejectedValue(new Error('x'))
+    render(<TransactionModal open onClose={vi.fn()} />)
+    digitar()
+    fireEvent.click(screen.getByRole('switch', { name: 'Repetir' }))
+    salvar()
+    expect(await screen.findByRole('alert')).toHaveTextContent('remova-a na aba Recorrências')
+  })
 })

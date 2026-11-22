@@ -190,7 +190,7 @@ export function TransactionModal({
             categoryId,
             valor,
             descricao: desc,
-            pago,
+            pago: meioEfetivo === 'cartao' ? true : pago,
           })
           const criada = await addRecurrence({ ...rec, template: rec.template as never })
           recId = criada.id
@@ -225,14 +225,15 @@ export function TransactionModal({
       }
       onClose()
     } catch (e) {
+      let msg = e instanceof Error ? e.message : 'Não foi possível salvar o lançamento.'
       if (recId) {
         try {
           await deleteRecurrence(recId)
         } catch {
-          /* melhor esforço */
+          msg += ' A recorrência criada não pôde ser desfeita — remova-a na aba Recorrências.'
         }
       }
-      setErro(e instanceof Error ? e.message : 'Não foi possível salvar o lançamento.')
+      setErro(msg)
     } finally {
       setSaving(false)
     }
@@ -493,7 +494,7 @@ export function TransactionModal({
               type="button"
               role="switch"
               aria-checked={repetir}
-              aria-label="Repetir"
+              aria-labelledby="tx-repetir-label"
               onClick={() => setRepetir((v) => !v)}
               className={cn(
                 'relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors',
