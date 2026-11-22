@@ -53,6 +53,8 @@ export function DebtFormModal({ debt, onClose }: { debt?: Debt; onClose: () => v
       {debt && !hasParcelas && <p className="text-sm font-medium text-app-fg">Gerar parcelas</p>}
       {showGenerate && <><div className="grid grid-cols-2 gap-3"><Field label="Parcelas" htmlFor="debt-parcelas"><TextInput id="debt-parcelas" type="number" min="1" max="600" value={parcelas} onChange={e => setParcelas(Number(e.target.value))} /></Field><Field label="Primeiro vencimento" htmlFor="debt-vencimento"><TextInput id="debt-vencimento" type="date" value={vencimento} onChange={e => setVencimento(e.target.value)} /></Field></div>{preview.length > 0 && <p className="text-sm text-app-muted">{debt && hasParcelas ? 'O saldo restante será redistribuído nas parcelas em aberto.' : `Prévia: ${preview.length} parcelas, a primeira de ${formatBRL(preview[0].valor_centavos)}.`}</p>}</>}
       <Field label="Observações" htmlFor="debt-obs"><Textarea id="debt-obs" value={observacoes} onChange={e => setObservacoes(e.target.value)} /></Field>
+      {(!credor.trim() || original <= 0) && <p className="text-xs text-app-muted">Preencha Nome e Valor original para salvar.</p>}
+      {showGenerate && parcelas > 1 && !vencimento && <p className="text-xs text-app-muted">Informe o primeiro vencimento para gerar as parcelas.</p>}
       {error && <p role="alert" className="text-sm text-expense">{error}</p>}
     </div>
   </Modal>
