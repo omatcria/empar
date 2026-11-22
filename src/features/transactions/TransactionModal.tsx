@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useData } from '@/store/data'
 import { useUI } from '@/store/ui'
-import { suggestCategory } from '@/engine'
-import type { Context, TxType, Transaction } from '@/domain/types'
-import { CONTEXT_LABEL } from '@/domain/enums'
+import { suggestCategory, buildRecurrenceFromLaunch } from '@/engine'
+import type { Context, TxType, Transaction, RecurrenceFreq } from '@/domain/types'
+import { CONTEXT_LABEL, RECURRENCE_FREQ_LABEL } from '@/domain/enums'
 import { Button } from '@/components/ui/primitives'
 import { Modal } from '@/components/ui/Modal'
 import { Field, Select, TextInput, MoneyInput } from '@/components/ui/form'
@@ -23,11 +23,15 @@ export function TransactionModal({
   onClose: () => void
   transaction?: Transaction
 }) {
-  const { accounts, cards, categories, transactions, addTransaction, addCardPurchase, updateTransaction, updateTransactionGroup } =
+  const { accounts, cards, categories, transactions, addTransaction, addCardPurchase, updateTransaction, updateTransactionGroup, addRecurrence, deleteRecurrence } =
     useData()
   const { viewMode } = useUI()
   const [categoriaTocada, setCategoriaTocada] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [erro, setErro] = useState('')
+  const [situacaoTocada, setSituacaoTocada] = useState(!!transaction)
+  const [repetir, setRepetir] = useState(false)
+  const [frequencia, setFrequencia] = useState<RecurrenceFreq>('mensal')
   const [confirmGroupEdit, setConfirmGroupEdit] = useState(false)
 
   const ctxInicial: Context = viewMode === 'EMPRESARIAL' ? 'EMPRESARIAL' : 'PESSOAL'
@@ -89,6 +93,9 @@ export function TransactionModal({
       setParcelas(1)
       setValorTipo('total')
       setCategoriaTocada(true)
+      setSituacaoTocada(true)
+      setRepetir(false)
+      setErro('')
     } else {
       setTipo('DESPESA')
       setContexto(ctxInicial)
@@ -103,6 +110,10 @@ export function TransactionModal({
       setParcelas(1)
       setValorTipo('total')
       setCategoriaTocada(false)
+      setSituacaoTocada(false)
+      setRepetir(false)
+      setFrequencia('mensal')
+      setErro('')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, transaction])
@@ -122,6 +133,14 @@ export function TransactionModal({
     setCategoryId(pick)
   }, [cats, descricao, contexto, tipo, transactions, categoriaTocada])
 
+  // Situação automática: data futura → pendente, senão pago (até o usuário mexer)
+  useEffect(() => {
+    if (situacaoTocada || !data) return
+    setPago(data <= todayISO())
+  }, [data, situacaoTocada])
+
+  const mostrarRepetir = !isEdit && (meioEfetivo === 'conta' || parcelas === 1)
+
   const podeSalvar =
     valor > 0 &&
     categoryId &&
@@ -130,6 +149,8 @@ export function TransactionModal({
   async function salvar() {
     if (!podeSalvar) return
     setSaving(true)
+    setErro('')
+    let recId: string | null = null
     try {
       if (isEdit) {
         if (transaction.parcela_group_id && !confirmGroupEdit) {
@@ -157,6 +178,23 @@ export function TransactionModal({
           await updateTransaction(transaction.id, patch)
         }
       } else {
+        if (repetir && mostrarRepetir) {
+          const desc = descricao.trim() || (meioEfetivo === 'cartao' ? 'Compra no cartão' : (categories.find((c) => c.id === categoryId)?.nome ?? ''))
+          const rec = buildRecurrenceFromLaunch({
+            contexto,
+            tipo: meioEfetivo === 'cartao' ? 'DESPESA' : tipo,
+            data,
+            frequencia,
+            accountId: meioEfetivo === 'conta' ? accountId : null,
+            cardId: meioEfetivo === 'cartao' ? cardId : null,
+            categoryId,
+            valor,
+            descricao: desc,
+            pago,
+          })
+          const criada = await addRecurrence({ ...rec, template: rec.template as never })
+          recId = criada.id
+        }
         if (meioEfetivo === 'conta') {
           await addTransaction({
             contexto,
@@ -167,6 +205,7 @@ export function TransactionModal({
             data,
             descricao: descricao.trim(),
             pago,
+            ...(recId ? { recorrencia_id: recId } : {}),
           })
         } else {
           // valor pode ser o total da compra ou o valor de cada parcela.
@@ -180,10 +219,20 @@ export function TransactionModal({
             descricao: descricao.trim() || 'Compra no cartão',
             tipo: 'DESPESA',
             parcelas,
+            ...(recId ? { recorrencia_id: recId } : {}),
           })
         }
       }
       onClose()
+    } catch (e) {
+      if (recId) {
+        try {
+          await deleteRecurrence(recId)
+        } catch {
+          /* melhor esforço */
+        }
+      }
+      setErro(e instanceof Error ? e.message : 'Não foi possível salvar o lançamento.')
     } finally {
       setSaving(false)
     }
@@ -413,10 +462,13 @@ export function TransactionModal({
             <Field label="Situação">
               <Segmented
                 value={pago ? 'pago' : 'pendente'}
-                onChange={(v) => setPago(v === 'pago')}
+                onChange={(v) => {
+                  setSituacaoTocada(true)
+                  setPago(v === 'pago')
+                }}
                 options={[
-                  { value: 'pago', label: 'Pago' },
-                  { value: 'pendente', label: 'Pendente' },
+                  { value: 'pago', label: tipo === 'RECEITA' ? 'Recebido' : 'Pago' },
+                  { value: 'pendente', label: tipo === 'RECEITA' ? 'A receber' : 'A pagar' },
                 ]}
               />
             </Field>
@@ -431,6 +483,52 @@ export function TransactionModal({
             placeholder="Opcional"
           />
         </Field>
+
+        {mostrarRepetir && (
+          <div className="flex items-center justify-between gap-3">
+            <span id="tx-repetir-label" className="text-sm font-medium text-app-fg2">
+              Repetir
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={repetir}
+              aria-label="Repetir"
+              onClick={() => setRepetir((v) => !v)}
+              className={cn(
+                'relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors',
+                repetir ? 'bg-pessoal-strong' : 'bg-app-surface-2 border border-app-border',
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+                  repetir && 'translate-x-5',
+                )}
+              />
+            </button>
+          </div>
+        )}
+        {mostrarRepetir && repetir && (
+          <Field label="Frequência" htmlFor="tx-freq">
+            <Select
+              id="tx-freq"
+              value={frequencia}
+              onChange={(e) => setFrequencia(e.target.value as RecurrenceFreq)}
+            >
+              {(Object.keys(RECURRENCE_FREQ_LABEL) as RecurrenceFreq[]).map((f) => (
+                <option key={f} value={f}>
+                  {RECURRENCE_FREQ_LABEL[f]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
+        {erro && (
+          <p role="alert" className="text-sm text-expense">
+            {erro}
+          </p>
+        )}
       </div>
       )}
     </Modal>
@@ -458,6 +556,7 @@ function Segmented<T extends string>({
           <button
             key={o.value}
             type="button"
+            aria-pressed={active}
             onClick={() => onChange(o.value)}
             className={cn(
               'h-9 rounded-lg px-2 text-sm font-medium transition-colors cursor-pointer',
