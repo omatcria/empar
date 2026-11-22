@@ -107,7 +107,7 @@ export function AddWishModal({ item, onClose }: { item?: WishlistItem; onClose: 
     <Field label="Enviar imagem" htmlFor="wish-upload" hint="JPG, PNG, WebP ou GIF, até 5 MB."><input id="wish-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => chooseFile(e.target.files?.[0])}/></Field>
     <Button size="sm" variant="secondary" onClick={() => void pasteFromClipboard()}>Colar imagem</Button>
     <div contentEditable role="textbox" aria-label="Colar imagem" suppressContentEditableWarning onPaste={pasteImage} className="rounded-xl border border-dashed border-app-border p-3 text-sm text-app-muted" tabIndex={0}>Clique ou toque aqui e cole uma imagem.</div>
-    {file && <div className="flex items-center gap-2 text-sm"><span>{file.name || 'Imagem colada'}</span><Button size="sm" variant="ghost" onClick={() => setFile(null)}>Remover imagem selecionada</Button></div>}
+    {file && <div className="flex min-w-0 items-center gap-2 text-sm"><span className="min-w-0 truncate">{file.name || 'Imagem colada'}</span><Button size="sm" variant="ghost" onClick={() => setFile(null)}>Remover imagem selecionada</Button></div>}
     {(preview || signedImage) && <img src={preview || signedImage || ''} referrerPolicy="no-referrer" className="h-24 max-w-full object-contain" alt="Prévia"/>}
     {!file && image && <Button size="sm" variant="ghost" onClick={() => setImage('')}>Remover imagem</Button>}
     <Field label="Loja" htmlFor="wish-shop"><TextInput id="wish-shop" value={shop} onChange={e => setShop(e.target.value)}/></Field>

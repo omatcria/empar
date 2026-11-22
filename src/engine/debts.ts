@@ -3,7 +3,12 @@ import type { Cents } from '@/lib/money'
 import type { Debt, DebtInstallment } from '@/domain/types'
 import { splitCents } from './invoices'
 
-export type DebtStatus = 'quitada' | 'em_dia' | 'atrasada'
+export type DebtStatus = 'quitada' | 'em_dia' | 'atrasada' | 'sem_parcelas'
+
+/** Total efetivo da dívida: o acordo quando existe, senão o valor original. */
+export function debtTotal(d: Pick<Debt, 'valor_acordo_centavos' | 'valor_original_centavos'>): Cents {
+  return d.valor_acordo_centavos ?? d.valor_original_centavos ?? 0
+}
 
 /** Divide o total em n parcelas mensais; cada vencimento usa o dia original limitado ao fim do mês. */
 export function buildDebtInstallments(
@@ -26,12 +31,18 @@ export function debtSummary(debt: Debt, parcelas: DebtInstallment[], todayISO: s
   const pagasList = parcelas.filter((p) => p.pago)
   const abertas = parcelas.filter((p) => !p.pago)
   const pago = pagasList.reduce((s, p) => s + p.valor_centavos, 0)
-  const total = debt.valor_acordo_centavos
+  const total = debtTotal(debt)
   const proxima =
     [...abertas].sort((a, b) => a.vencimento.localeCompare(b.vencimento))[0] ?? null
   const atrasadas = abertas.filter((p) => p.vencimento < todayISO).length
   const status: DebtStatus =
-    parcelas.length > 0 && abertas.length === 0 ? 'quitada' : atrasadas > 0 ? 'atrasada' : 'em_dia'
+    parcelas.length === 0
+      ? 'sem_parcelas'
+      : abertas.length === 0
+        ? 'quitada'
+        : atrasadas > 0
+          ? 'atrasada'
+          : 'em_dia'
   return {
     total,
     pago,
@@ -46,13 +57,15 @@ export function debtSummary(debt: Debt, parcelas: DebtInstallment[], todayISO: s
 
 export function debtsTotals(debts: Debt[], parcelas: DebtInstallment[]) {
   const ids = new Set(debts.map((d) => d.id))
-  const totalAcordos = debts.reduce((s, d) => s + d.valor_acordo_centavos, 0)
+  const totalAcordos = debts.reduce((s, d) => s + debtTotal(d), 0)
   const pago = parcelas
     .filter((p) => ids.has(p.debt_id) && p.pago)
     .reduce((s, p) => s + p.valor_centavos, 0)
   const economia = debts.reduce(
     (s, d) =>
-      d.valor_original_centavos == null ? s : s + (d.valor_original_centavos - d.valor_acordo_centavos),
+      d.valor_original_centavos == null || d.valor_acordo_centavos == null
+        ? s
+        : s + (d.valor_original_centavos - d.valor_acordo_centavos),
     0,
   )
   return { totalAcordos, pago, restante: totalAcordos - pago, economia }

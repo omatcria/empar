@@ -18,7 +18,7 @@ export function Debts() {
   const [editing,setEditing] = useState<Debt | null>(null)
   const visible = debts.filter(d => viewMode === 'CONSOLIDADO' || d.contexto === viewMode)
   const totals = debtsTotals(visible, installments)
-  const stats = [['Total em acordos',totals.totalAcordos],['Já pago',totals.pago],['Restante',totals.restante],['Economia negociada',totals.economia]] as const
+  const stats = [['Total em dívidas',totals.totalAcordos],['Já pago',totals.pago],['Restante',totals.restante],['Economia negociada',totals.economia]] as const
   if (loadError) return <p role="alert">Não foi possível carregar as dívidas: {loadError}</p>
   if (!loaded) return <p>Carregando dívidas…</p>
   return <div className="space-y-5"><div className="flex items-center justify-between"><div><h1 className="text-xl font-bold text-app-fg">Dívidas</h1><p className="text-sm text-app-muted">Acompanhe seus acordos e parcelas.</p></div>{canWrite && <Button icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>Nova dívida</Button>}</div>

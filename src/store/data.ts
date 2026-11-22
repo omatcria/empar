@@ -41,7 +41,12 @@ import type {
 } from '@/domain/types'
 import type { InvoiceCycle } from '@/engine/invoices'
 import { buildInstallmentPlan, resolveInvoiceCycle } from '@/engine/invoices'
-import { dueOccurrences, type RecurrenceTemplate } from '@/engine/recurrences'
+import {
+  buildRecurrenceTx,
+  dueOccurrences,
+  resolveRecurrenceTarget,
+  type RecurrenceTemplate,
+} from '@/engine/recurrences'
 import { todayISO, uid } from '@/lib/cn'
 
 export interface CardPurchaseParams {
@@ -53,6 +58,8 @@ export interface CardPurchaseParams {
   descricao: string
   tipo?: TxType
   parcelas?: number
+  /** Recorrência de origem (gravado só em compra à vista). */
+  recorrencia_id?: string
 }
 
 function requireUserId(): string {
@@ -155,6 +162,8 @@ interface DataState {
   addMovement: (input: Omit<InvestmentMovementInsert, 'user_id' | 'workspace_id'>) => Promise<void>
   deleteMovement: (id: string) => Promise<void>
 }
+
+let dueRecurrencesInFlight: Promise<void> | null = null
 
 export const useData = create<DataState>((set, get) => ({
   loading: false,
@@ -536,6 +545,7 @@ export const useData = create<DataState>((set, get) => ({
         data: p.data,
         descricao: p.descricao,
         pago: true,
+        ...(p.recorrencia_id ? { recorrencia_id: p.recorrencia_id } : {}),
       })
       return
     }
@@ -727,8 +737,12 @@ export const useData = create<DataState>((set, get) => ({
       .single()
     if (error) throw error
     set((s) => ({ recurrences: [...s.recurrences, data] }))
-    // gera imediatamente se já estiver vencida
-    await get().runDueRecurrences()
+    // gera imediatamente se já estiver vencida; falha aqui não pode desfazer a criação
+    try {
+      await get().runDueRecurrences()
+    } catch (e) {
+      console.error('Falha ao gerar recorrências após criar', e)
+    }
     return data
   },
   updateRecurrence: async (id, patch) => {
@@ -748,7 +762,10 @@ export const useData = create<DataState>((set, get) => ({
   },
 
   /** Gera as transações devidas de todas as recorrências ativas e avança as datas. */
-  runDueRecurrences: async () => {
+  runDueRecurrences: () => {
+    // execução única: chamadas simultâneas reaproveitam a promise em andamento
+    if (dueRecurrencesInFlight) return dueRecurrencesInFlight
+    const p = (async () => {
     const today = todayISO()
     const recs = get().recurrences.filter((r) => r.ativo)
     for (const r of recs) {
@@ -760,21 +777,30 @@ export const useData = create<DataState>((set, get) => ({
       )
       if (dates.length === 0) continue
       const tpl = r.template as unknown as RecurrenceTemplate
-      if (!tpl?.account_id || !tpl?.category_id) continue
-      const inserts = dates.map((data) => ({
-        contexto: r.contexto,
-        tipo: tpl.tipo,
-        account_id: tpl.account_id,
-        category_id: tpl.category_id,
-        valor_centavos: tpl.valor_centavos,
-        data,
-        descricao: tpl.descricao,
-        pago: tpl.pago ?? true,
-        recorrencia_id: r.id,
-      }))
+      const target = resolveRecurrenceTarget(tpl, get().accounts, get().cards)
+      if (!target) continue
+      const inserts: Omit<TransactionInsert, 'user_id' | 'workspace_id'>[] = []
+      for (const data of dates) {
+        const tx = buildRecurrenceTx(tpl, target, r.contexto, data, r.id)
+        if (target.kind === 'cartao') {
+          const cycle = resolveInvoiceCycle(
+            target.card.dia_fechamento,
+            target.card.dia_vencimento,
+            data,
+          )
+          const inv = await get().ensureInvoice(target.card.id, cycle)
+          tx.invoice_id = inv.id
+        }
+        inserts.push(tx)
+      }
       await get().addTransactions(inserts)
       await get().updateRecurrence(r.id, { proxima_data: novaProxima })
     }
+    })().finally(() => {
+      dueRecurrencesInFlight = null
+    })
+    dueRecurrencesInFlight = p
+    return p
   },
 
   logActivity: async (entity, action, entity_id, meta) => {

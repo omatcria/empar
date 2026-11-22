@@ -24,7 +24,7 @@ export function ContextSelector({ className }: { className?: string }) {
       role="tablist"
       aria-label="Contexto"
       className={cn(
-        'inline-grid grid-cols-3 gap-1 rounded-xl bg-app-surface-2 p-1',
+        'inline-grid shrink-0 grid-cols-3 gap-1 rounded-xl bg-app-surface-2 p-1',
         className,
       )}
     >
@@ -38,7 +38,7 @@ export function ContextSelector({ className }: { className?: string }) {
             aria-selected={active}
             onClick={() => setViewMode(m)}
             className={cn(
-              'flex h-9 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-all cursor-pointer',
+              'flex h-10 items-center justify-center gap-1.5 rounded-lg px-2 sm:px-3 text-sm font-medium transition-all cursor-pointer',
               active ? ACTIVE[m] : 'text-app-muted hover:text-app-fg2',
             )}
           >

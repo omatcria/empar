@@ -11,6 +11,8 @@ import { Spinner } from '@/components/ui/primitives'
 import { Login } from '@/routes/Login/Login'
 import { AppShell } from '@/components/layout/AppShell'
 import { Onboarding } from '@/routes/Onboarding/Onboarding'
+import { UpdatePrompt } from '@/components/pwa/UpdatePrompt'
+import { OfflineBanner } from '@/components/pwa/OfflineBanner'
 
 // Rotas carregadas sob demanda (separa Recharts e telas pesadas do bundle inicial)
 const Dashboard = lazy(() =>
@@ -91,9 +93,18 @@ export function App() {
     }
   }, [ws, resyncInvoices])
 
-  if (initializing) return <Splash />
-  if (!session) return <Login />
-  return <AuthedApp />
+  let content
+  if (initializing) content = <Splash />
+  else if (!session) content = <Login />
+  else content = <AuthedApp />
+
+  return (
+    <>
+      <OfflineBanner />
+      {content}
+      <UpdatePrompt />
+    </>
+  )
 }
 
 function AuthedApp() {

@@ -532,7 +532,7 @@ export function Select({
                   aria-activedescendant={activeId}
                   aria-autocomplete="list"
                   autoComplete="off"
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-app-muted"
+                  className="min-w-0 flex-1 bg-transparent text-base sm:text-sm outline-none placeholder:text-app-muted"
                 />
               </div>
             )}

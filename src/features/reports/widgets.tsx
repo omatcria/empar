@@ -30,6 +30,7 @@ import { ContextBadge } from '@/components/ui/ContextBadge'
 import { PieDespesas, type PieSlice } from '@/components/charts/PieDespesas'
 import { MeiCard } from '@/features/mei/MeiCard'
 import { UpcomingDues } from '@/features/dues/UpcomingDues'
+import { useToday } from '@/lib/useToday'
 import { formatBRL, formatBRLCompact, type Cents } from '@/lib/money'
 
 const COL = {
@@ -52,6 +53,7 @@ const tooltipStyle = {
 function useDash() {
   const data = useData()
   const { viewMode, mes } = useUI()
+  const hoje = useToday()
   const d = useMemo(
     () =>
       buildDashboard({
@@ -62,8 +64,9 @@ function useDash() {
         provisions: data.provisions,
         categories: data.categories,
         mes,
+        hoje,
       }),
-    [data.accounts, data.cards, data.invoices, data.transactions, data.provisions, data.categories, mes],
+    [data.accounts, data.cards, data.invoices, data.transactions, data.provisions, data.categories, mes, hoje],
   )
   return { d, viewMode, mes, data }
 }
@@ -100,12 +103,19 @@ function StatTile({
 
 /* ---------------- widgets ---------------- */
 const WidgetSaldos: FC = () => {
-  const { d } = useDash()
+  const { d, viewMode } = useDash()
+  const previsto =
+    viewMode === 'PESSOAL'
+      ? d.previstoPessoal
+      : viewMode === 'EMPRESARIAL'
+        ? d.previstoEmpresarial
+        : d.previstoConsolidado
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatTile label="Patrimônio consolidado" value={d.saldoConsolidado} signed />
       <StatTile label="Saldo pessoal" value={d.saldoPessoal} signed />
       <StatTile label="Saldo empresarial" value={d.saldoEmpresarial} signed />
+      <StatTile label="Saldo previsto" value={previsto} signed />
     </div>
   )
 }
@@ -171,17 +181,18 @@ const WidgetReceitaDespesa: FC = () => {
 
 const WidgetEvolucao: FC = () => {
   const { data, viewMode, mes } = useDash()
+  const hoje = useToday()
   const meses = useMemo(() => lastMonths(mes, 6), [mes])
   const fluxo = useMemo(() => fluxoMensal(data.transactions, viewMode, meses), [data.transactions, viewMode, meses])
   const saldoAtual = useMemo(() => {
-    const bctx = { cards: data.cards, invoices: data.invoices }
+    const bctx = { cards: data.cards, invoices: data.invoices, asOf: hoje }
     if (viewMode === 'CONSOLIDADO')
       return (
         contextBalance('PESSOAL', data.accounts, data.transactions, bctx) +
         contextBalance('EMPRESARIAL', data.accounts, data.transactions, bctx)
       )
     return contextBalance(viewMode, data.accounts, data.transactions, bctx)
-  }, [data.accounts, data.transactions, data.cards, data.invoices, viewMode])
+  }, [data.accounts, data.transactions, data.cards, data.invoices, viewMode, hoje])
 
   const lineData = useMemo(() => {
     const bal: number[] = new Array(meses.length)

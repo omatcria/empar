@@ -45,3 +45,15 @@ it('ignora respostas antigas ao trocar de espaço', async () => {
   pending[0]({data:[{...debt,id:'antigo'}],error:null});pending[1]({data:[],error:null}); await first
   expect(useDebts.getState().debts.map(d=>d.id)).toEqual(['novo'])
 })
+
+it('cria dívida só com nome e valor original, sem parcelas', async () => {
+  from.mockReset()
+  const insertDebt = vi.fn(() => ({ select: () => ({ single: async () => ({ data: { ...debt, id: 'novo' }, error: null }) }) }))
+  from.mockReturnValue({ insert: insertDebt })
+  useDebts.setState({ debts: [], installments: [old] })
+  await useDebts.getState().addDebt({ credor: '[X]', valor_original_centavos: 50000, valor_acordo_centavos: null, contexto: 'PESSOAL' })
+  expect(from).toHaveBeenCalledTimes(1)
+  expect(from).toHaveBeenCalledWith('debts')
+  expect(useDebts.getState().debts).toHaveLength(1)
+  expect(useDebts.getState().installments).toEqual([old])
+})

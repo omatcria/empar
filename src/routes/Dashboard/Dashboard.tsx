@@ -18,7 +18,9 @@ import { PieDespesas, type PieSlice } from '@/components/charts/PieDespesas'
 import { UpcomingDues } from '@/features/dues/UpcomingDues'
 import { mesRefLabel } from '@/engine/period'
 import { MeiCard } from '@/features/mei/MeiCard'
+import { ForecastCard } from '@/features/forecast/ForecastCard'
 import { cn } from '@/lib/cn'
+import { useToday } from '@/lib/useToday'
 import type { Cents } from '@/lib/money'
 
 export function Dashboard() {
@@ -26,6 +28,7 @@ export function Dashboard() {
     useData()
   const { viewMode, mes } = useUI()
 
+  const hoje = useToday()
   const d = useMemo(
     () =>
       buildDashboard({
@@ -36,8 +39,9 @@ export function Dashboard() {
         provisions,
         categories,
         mes,
+        hoje,
       }),
-    [accounts, cards, invoices, transactions, provisions, categories, mes],
+    [accounts, cards, invoices, transactions, provisions, categories, mes, hoje],
   )
 
   // Despesas por categoria (respeitando o contexto do seletor)
@@ -68,6 +72,13 @@ export function Dashboard() {
         ? d.saldoEmpresarial
         : d.saldoConsolidado
 
+  const previstoValor =
+    viewMode === 'PESSOAL'
+      ? d.previstoPessoal
+      : viewMode === 'EMPRESARIAL'
+        ? d.previstoEmpresarial
+        : d.previstoConsolidado
+
   const heroLabel =
     viewMode === 'PESSOAL'
       ? 'Saldo pessoal'
@@ -77,7 +88,8 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Hero saldo */}
+      {/* Hero saldo + previsto */}
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
       <Surface
         className={cn(
           'relative overflow-hidden p-6',
@@ -105,6 +117,13 @@ export function Dashboard() {
           </div>
         )}
       </Surface>
+      <ForecastCard
+        valor={previstoValor}
+        horizonte={d.horizontePrevisto}
+        pessoal={viewMode === 'CONSOLIDADO' ? d.previstoPessoal : undefined}
+        empresarial={viewMode === 'CONSOLIDADO' ? d.previstoEmpresarial : undefined}
+      />
+      </div>
 
       {/* Cards por contexto */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -69,14 +69,22 @@ export function Modal({
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="grid size-8 place-items-center rounded-lg text-app-muted hover:bg-app-surface-2 hover:text-app-fg cursor-pointer"
+            className="grid size-10 place-items-center rounded-lg text-app-muted hover:bg-app-surface-2 hover:text-app-fg cursor-pointer"
           >
             <X className="size-5" />
           </button>
         </div>
-        <div className="px-5 py-5">{children}</div>
+        <div
+          className="px-5 py-5"
+          style={footer ? undefined : { paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}
+        >
+          {children}
+        </div>
         {footer && (
-          <div className="sticky bottom-0 flex justify-end gap-2 border-t border-app-border bg-app-surface/95 px-5 py-4 backdrop-blur">
+          <div
+            className="sticky bottom-0 flex justify-end gap-2 border-t border-app-border bg-app-surface/95 px-5 pt-4 backdrop-blur"
+            style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+          >
             {footer}
           </div>
         )}

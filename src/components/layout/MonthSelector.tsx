@@ -15,24 +15,24 @@ export function MonthSelector({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 rounded-xl border border-app-border bg-app-surface-2 p-1',
+        'inline-flex shrink-0 items-center gap-0.5 sm:gap-1 rounded-xl border border-app-border bg-app-surface-2 p-1',
         className,
       )}
     >
       <button
         aria-label="Mês anterior"
         onClick={() => setMes(shift(mes, -1))}
-        className="grid size-8 place-items-center rounded-lg text-app-muted hover:bg-app-border/60 hover:text-app-fg cursor-pointer"
+        className="grid size-10 place-items-center rounded-lg text-app-muted hover:bg-app-border/60 hover:text-app-fg cursor-pointer"
       >
         <ChevronLeft className="size-4" />
       </button>
-      <span className="min-w-24 text-center text-sm font-medium capitalize text-app-fg">
+      <span className="px-1 text-center sm:min-w-24 sm:px-0 text-sm font-medium capitalize text-app-fg">
         {mesRefLabel(mes)}
       </span>
       <button
         aria-label="Próximo mês"
         onClick={() => setMes(shift(mes, 1))}
-        className="grid size-8 place-items-center rounded-lg text-app-muted hover:bg-app-border/60 hover:text-app-fg cursor-pointer"
+        className="grid size-10 place-items-center rounded-lg text-app-muted hover:bg-app-border/60 hover:text-app-fg cursor-pointer"
       >
         <ChevronRight className="size-4" />
       </button>

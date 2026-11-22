@@ -5,7 +5,7 @@ import { ptBR } from 'date-fns/locale'
 import { useData } from '@/store/data'
 import { useUI } from '@/store/ui'
 import { useCanWrite } from '@/store/workspace'
-import type { Context, Recurrence, RecurrenceFreq, TxType } from '@/domain/types'
+import type { Account, Card, Context, Recurrence, RecurrenceFreq, TxType } from '@/domain/types'
 import type { RecurrenceTemplate } from '@/engine/recurrences'
 import { CONTEXT_LABEL, RECURRENCE_FREQ_LABEL, TX_TYPE_LABEL } from '@/domain/enums'
 import { Button, Surface } from '@/components/ui/primitives'
@@ -13,15 +13,53 @@ import { Money } from '@/components/ui/Money'
 import { ContextBadge } from '@/components/ui/ContextBadge'
 import { Modal } from '@/components/ui/Modal'
 import { Field, Select, TextInput, MoneyInput } from '@/components/ui/form'
-import { todayISO } from '@/lib/cn'
+import { cn, todayISO } from '@/lib/cn'
 import type { Cents } from '@/lib/money'
 
 function tpl(r: Recurrence): RecurrenceTemplate {
   return r.template as unknown as RecurrenceTemplate
 }
 
+function alvoNome(t: RecurrenceTemplate, accounts: Account[], cards: Card[]): string {
+  if (t.card_id) return cards.find((c) => c.id === t.card_id)?.nome ?? 'Cartão removido'
+  return accounts.find((a) => a.id === t.account_id)?.nome ?? 'Conta removida'
+}
+
+function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T
+  onChange: (v: T) => void
+  options: { value: T; label: string }[]
+}) {
+  return (
+    <div
+      className="grid gap-1 rounded-xl bg-app-surface-2 p-1"
+      style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}
+    >
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onChange(o.value)}
+          className={cn(
+            'h-9 rounded-lg px-2 text-sm font-medium transition-colors cursor-pointer',
+            value === o.value
+              ? 'bg-app-surface text-app-fg shadow'
+              : 'text-app-muted hover:text-app-fg2',
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function Recurrences() {
-  const { recurrences, updateRecurrence } = useData()
+  const { recurrences, updateRecurrence, accounts, cards } = useData()
   const { viewMode } = useUI()
   const canWrite = useCanWrite()
   const [creating, setCreating] = useState(false)
@@ -68,7 +106,7 @@ export function Recurrences() {
                     {viewMode === 'CONSOLIDADO' && <ContextBadge contexto={r.contexto} iconOnly />}
                   </div>
                   <p className="text-xs text-app-muted">
-                    {RECURRENCE_FREQ_LABEL[r.frequencia]} · próx.{' '}
+                    {alvoNome(t, accounts, cards)} · {RECURRENCE_FREQ_LABEL[r.frequencia]} · próx.{' '}
                     {format(parseISO(r.proxima_data), "dd 'de' MMM", { locale: ptBR })}
                   </p>
                 </button>
@@ -106,7 +144,7 @@ export function Recurrences() {
   )
 }
 
-function RecurrenceModal({
+export function RecurrenceModal({
   open,
   onClose,
   recurrence,
@@ -115,7 +153,7 @@ function RecurrenceModal({
   onClose: () => void
   recurrence?: Recurrence
 }) {
-  const { accounts, categories, addRecurrence, updateRecurrence, deleteRecurrence } = useData()
+  const { accounts, cards, categories, addRecurrence, updateRecurrence, deleteRecurrence } = useData()
   const { viewMode } = useUI()
   const isEdit = !!recurrence
   const t0 = recurrence ? tpl(recurrence) : undefined
@@ -125,6 +163,8 @@ function RecurrenceModal({
   const [descricao, setDescricao] = useState(t0?.descricao ?? '')
   const [contexto, setContexto] = useState<Context>(ctxInicial)
   const [tipo, setTipo] = useState<TxType>(t0?.tipo ?? 'RECEITA')
+  const [pagarCom, setPagarCom] = useState<'conta' | 'cartao'>(t0?.card_id ? 'cartao' : 'conta')
+  const [cardId, setCardId] = useState(t0?.card_id ?? '')
   const [accountId, setAccountId] = useState(t0?.account_id ?? '')
   const [categoryId, setCategoryId] = useState(t0?.category_id ?? '')
   const [valor, setValor] = useState<Cents>(t0?.valor_centavos ?? 0)
@@ -132,10 +172,33 @@ function RecurrenceModal({
   const [proxima, setProxima] = useState(recurrence?.proxima_data ?? todayISO())
   const [saving, setSaving] = useState(false)
 
+  // reinicia os campos ao abrir (o modal fica montado entre aberturas)
+  useEffect(() => {
+    if (!open) return
+    const t = recurrence ? tpl(recurrence) : undefined
+    setDescricao(t?.descricao ?? '')
+    setContexto(recurrence?.contexto ?? (viewMode === 'EMPRESARIAL' ? 'EMPRESARIAL' : 'PESSOAL'))
+    setTipo(t?.tipo ?? 'RECEITA')
+    setPagarCom(t?.card_id ? 'cartao' : 'conta')
+    setCardId(t?.card_id ?? '')
+    setAccountId(t?.account_id ?? '')
+    setCategoryId(t?.category_id ?? '')
+    setValor(t?.valor_centavos ?? 0)
+    setFrequencia(recurrence?.frequencia ?? 'mensal')
+    setProxima(recurrence?.proxima_data ?? todayISO())
+    setSaving(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, recurrence])
+
   const contas = useMemo(
     () => accounts.filter((a) => !a.arquivada && a.contexto === contexto),
     [accounts, contexto],
   )
+  const cartoes = useMemo(
+    () => cards.filter((c) => !c.arquivado && c.tipo !== 'debito' && c.contexto === contexto),
+    [cards, contexto],
+  )
+  const usaCartao = tipo === 'DESPESA' && pagarCom === 'cartao'
   const cats = useMemo(
     () =>
       categories.filter(
@@ -151,10 +214,13 @@ function RecurrenceModal({
     if (!contas.some((a) => a.id === accountId)) setAccountId(contas[0]?.id ?? '')
   }, [contas, accountId])
   useEffect(() => {
+    if (!cartoes.some((c) => c.id === cardId)) setCardId(cartoes[0]?.id ?? '')
+  }, [cartoes, cardId])
+  useEffect(() => {
     if (!cats.some((c) => c.id === categoryId)) setCategoryId(cats[0]?.id ?? '')
   }, [cats, categoryId])
 
-  const podeSalvar = descricao.trim() && valor > 0 && accountId && categoryId && proxima
+  const podeSalvar = descricao.trim() && valor > 0 && (usaCartao ? cardId : accountId) && categoryId && proxima
 
   async function salvar() {
     if (!podeSalvar) return
@@ -162,11 +228,12 @@ function RecurrenceModal({
     try {
       const template: RecurrenceTemplate = {
         tipo,
-        account_id: accountId,
+        account_id: usaCartao ? null : accountId,
+        card_id: usaCartao ? cardId : null,
         category_id: categoryId,
         valor_centavos: valor,
         descricao: descricao.trim(),
-        pago: true,
+        pago: t0?.pago ?? true,
       }
       const dia = Number(proxima.slice(8, 10))
       if (isEdit) {
@@ -254,21 +321,47 @@ function RecurrenceModal({
           </Field>
         </div>
 
+        {tipo === 'DESPESA' && (
+          <Field label="Pagar com">
+            <Segmented
+              value={pagarCom}
+              onChange={setPagarCom}
+              options={[
+                { value: 'conta', label: 'Conta' },
+                { value: 'cartao', label: 'Cartão de crédito' },
+              ]}
+            />
+          </Field>
+        )}
+
         <Field label="Valor" htmlFor="r-valor" required>
           <MoneyInput id="r-valor" cents={valor} onChangeCents={setValor} />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Conta" htmlFor="r-conta" required>
-            <Select id="r-conta" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-              {contas.length === 0 && <option value="">Nenhuma conta</option>}
-              {contas.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.nome}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          {usaCartao ? (
+            <Field label="Cartão" htmlFor="r-cartao" required>
+              <Select id="r-cartao" value={cardId} onChange={(e) => setCardId(e.target.value)}>
+                {cartoes.length === 0 && <option value="">Nenhum cartão</option>}
+                {cartoes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          ) : (
+            <Field label="Conta" htmlFor="r-conta" required>
+              <Select id="r-conta" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+                {contas.length === 0 && <option value="">Nenhuma conta</option>}
+                {contas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nome}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
           <Field label="Categoria" htmlFor="r-cat" required>
             <Select id="r-cat" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
               {cats.length === 0 && <option value="">Nenhuma</option>}

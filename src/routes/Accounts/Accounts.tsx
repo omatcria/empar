@@ -81,7 +81,7 @@ export function Accounts() {
           </p>
         </Surface>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {visiveis.map((a) => (
             <Surface key={a.id} className="flex items-center gap-3 p-4">
               {a.banco ? (
@@ -106,7 +106,7 @@ export function Accounts() {
               </div>
               <div className="flex flex-col items-end gap-1.5">
                 <Money
-                  cents={accountBalance(a, transactions, { cards, invoices })}
+                  cents={accountBalance(a, transactions, { cards, invoices, asOf: todayISO() })}
                   signed
                   className="text-base font-semibold"
                 />
@@ -392,7 +392,7 @@ function AdjustBalanceModal({
     useData()
 
   const saldoAtual = useMemo(
-    () => accountBalance(account, transactions, { cards, invoices }),
+    () => accountBalance(account, transactions, { cards, invoices, asOf: todayISO() }),
     [account, transactions, cards, invoices],
   )
 
