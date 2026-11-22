@@ -5,8 +5,8 @@ import { CategoryCombobox } from '../CategoryCombobox'
 
 function cat(id: string, nome: string, pai: string | null = null): Category {
   return {
-    id, nome, categoria_pai_id: pai, chave: null, contexto: 'pessoal', cor: '#000000',
-    created_at: '', icone: 'tag', sistema: false, tipo: 'despesa', updated_at: '',
+    id, nome, categoria_pai_id: pai, chave: null, contexto: 'PESSOAL', cor: '#000000',
+    created_at: '', icone: 'tag', sistema: false, tipo: 'DESPESA', updated_at: '',
     user_id: 'u', workspace_id: 'w',
   } as Category
 }
