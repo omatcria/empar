@@ -41,7 +41,7 @@ export function Transactions() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-app-fg">Lançamentos</h1>
           <p className="text-sm text-app-muted">{mesRefLabel(mes)}</p>

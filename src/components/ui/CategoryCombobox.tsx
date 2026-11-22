@@ -48,7 +48,7 @@ export function CategoryCombobox({ value, onChange, categories, id, className, p
         type="button"
         id={id}
         onClick={() => setOpen(!open)}
-        className="flex h-11 w-full items-center justify-between rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pessoal cursor-pointer"
+        className="flex h-11 w-full items-center justify-between rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-pessoal cursor-pointer"
       >
         {selected ? (
           <div className="flex items-center gap-2 overflow-hidden">
@@ -78,7 +78,7 @@ export function CategoryCombobox({ value, onChange, categories, id, className, p
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-app-muted"
+              className="flex-1 bg-transparent text-base sm:text-sm outline-none placeholder:text-app-muted"
             />
           </div>
           <div className="overflow-y-auto p-1.5 flex-1 space-y-0.5">

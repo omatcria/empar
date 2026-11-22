@@ -73,10 +73,13 @@ export function AppShell() {
       <DesktopSidebar />
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-app-border bg-app-bg/80 backdrop-blur">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <header
+          className="sticky top-0 z-30 border-b border-app-border bg-app-bg/80 backdrop-blur"
+          style={{ top: 'var(--offline-banner-h, 0px)', paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 sm:py-3">
             <ContextSelector />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <MonthSelector />
               <NotificationsDropdown />
               {!canWrite && (

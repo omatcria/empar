@@ -9,7 +9,7 @@ import { formatBRL, parseBRLToCents, type Cents } from '@/lib/money'
 
 /** Base visual dos campos (inputs, gatilho do Select, textarea). */
 export const controlBase =
-  'w-full h-11 rounded-xl border border-app-border bg-app-surface-2 px-3 text-sm text-app-fg ' +
+  'w-full h-11 rounded-xl border border-app-border bg-app-surface-2 px-3 text-base sm:text-sm text-app-fg ' +
   'placeholder:text-app-muted focus:outline-none focus:ring-2 focus:ring-pessoal focus:border-transparent ' +
   'disabled:opacity-50 transition-shadow'
 

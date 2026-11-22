@@ -81,7 +81,7 @@ export function Accounts() {
           </p>
         </Surface>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {visiveis.map((a) => (
             <Surface key={a.id} className="flex items-center gap-3 p-4">
               {a.banco ? (
