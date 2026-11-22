@@ -16,6 +16,7 @@ export function InstallCard() {
     standalone: !!standalone,
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
     hasPrompt: !!deferred,
+    maxTouchPoints: typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0,
   })
 
   return (

@@ -38,3 +38,14 @@ describe('OfflineBanner', () => {
     expect(screen.queryByText('Sem conexão — os dados podem estar desatualizados')).toBeNull()
   })
 })
+
+describe('detectInstallState iPadOS', () => {
+  const mac = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15'
+  it('Macintosh com toque é iOS', () => {
+    expect(detectInstallState({ standalone: false, userAgent: mac, hasPrompt: false, maxTouchPoints: 5 })).toBe('ios')
+  })
+  it('Macintosh sem toque não é suportado', () => {
+    expect(detectInstallState({ standalone: false, userAgent: mac, hasPrompt: false, maxTouchPoints: 0 })).toBe('unsupported')
+    expect(detectInstallState({ standalone: false, userAgent: mac, hasPrompt: false })).toBe('unsupported')
+  })
+})

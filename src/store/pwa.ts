@@ -11,9 +11,12 @@ export function detectInstallState(o: {
   standalone: boolean
   userAgent: string
   hasPrompt: boolean
+  maxTouchPoints?: number
 }): InstallState {
   if (o.standalone) return 'installed'
   if (/iPhone|iPad|iPod/i.test(o.userAgent)) return 'ios'
+  // iPadOS Safari se apresenta como Macintosh, mas tem toque
+  if (/Macintosh/i.test(o.userAgent) && (o.maxTouchPoints ?? 0) > 1) return 'ios'
   if (o.hasPrompt) return 'prompt'
   return 'unsupported'
 }

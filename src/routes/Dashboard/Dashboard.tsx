@@ -19,7 +19,8 @@ import { UpcomingDues } from '@/features/dues/UpcomingDues'
 import { mesRefLabel } from '@/engine/period'
 import { MeiCard } from '@/features/mei/MeiCard'
 import { ForecastCard } from '@/features/forecast/ForecastCard'
-import { cn, todayISO } from '@/lib/cn'
+import { cn } from '@/lib/cn'
+import { useToday } from '@/lib/useToday'
 import type { Cents } from '@/lib/money'
 
 export function Dashboard() {
@@ -27,6 +28,7 @@ export function Dashboard() {
     useData()
   const { viewMode, mes } = useUI()
 
+  const hoje = useToday()
   const d = useMemo(
     () =>
       buildDashboard({
@@ -37,9 +39,9 @@ export function Dashboard() {
         provisions,
         categories,
         mes,
-        hoje: todayISO(),
+        hoje,
       }),
-    [accounts, cards, invoices, transactions, provisions, categories, mes],
+    [accounts, cards, invoices, transactions, provisions, categories, mes, hoje],
   )
 
   // Despesas por categoria (respeitando o contexto do seletor)
