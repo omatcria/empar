@@ -38,10 +38,10 @@ export function Login() {
     <div className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-pessoal to-empresarial text-2xl font-bold text-white shadow-lg shadow-pessoal/30">
-            $
-          </div>
-          <h1 className="text-2xl font-bold text-app-fg">App Finanças</h1>
+          <img src="/brand/empar-symbol.png" alt="" className="mx-auto mb-4 h-16 w-auto" />
+          <h1>
+            <img src="/brand/empar-wordmark.png" alt="Empar" className="mx-auto h-8 w-auto" />
+          </h1>
           <p className="mt-1 flex items-center justify-center gap-2 text-sm text-app-muted">
             <User className="size-3.5 text-pessoal-strong" /> Pessoal
             <span className="text-app-border">·</span>

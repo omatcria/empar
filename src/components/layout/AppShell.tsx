@@ -164,11 +164,9 @@ function DesktopSidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-app-border bg-app-surface lg:flex">
       <div className="flex items-center gap-2.5 px-5 py-5">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-pessoal to-empresarial text-base font-bold text-white">
-          $
-        </div>
+        <img src="/brand/empar-symbol.png" alt="" className="size-9 object-contain" />
         <div className="min-w-0 leading-tight">
-          <p className="text-sm font-semibold text-app-fg">App Finanças</p>
+          <img src="/brand/empar-wordmark.png" alt="Empar" className="h-5 w-auto" />
           <p className="truncate text-[11px] text-app-muted">{ws?.nome ?? 'PJ & Pessoal'}</p>
         </div>
       </div>

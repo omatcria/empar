@@ -11,6 +11,7 @@ import type { Category, Context, TxType } from '@/domain/types'
 import { Button, Surface } from '@/components/ui/primitives'
 import { Field, TextInput, MoneyInput } from '@/components/ui/form'
 import { MeiSettings } from '@/features/mei/MeiSettings'
+import { InstallCard } from '@/features/pwa/InstallCard'
 import { DangerZone } from '@/features/reset/DangerZone'
 import { exportBackup } from '@/features/reset/backup'
 import { Avatar } from '@/components/ui/Avatar'
@@ -134,6 +135,8 @@ export function Settings() {
           </Button>
         </div>
       </Surface>
+
+      <InstallCard />
 
       {/* Provisões de imposto */}
       <Surface className="p-5">
