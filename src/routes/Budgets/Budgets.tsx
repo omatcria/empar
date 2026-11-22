@@ -39,7 +39,7 @@ export function Budgets() {
         gasto: categorySpend(c.id, transactions, mes),
         limite: limiteDe(c.id),
       }))
-      .filter((l) => l.limite > 0 || l.gasto > 0)
+      .filter((l) => l.limite > 0)
       .sort((a, b) => b.gasto - a.gasto)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categories, transactions, budgets, mes, viewMode])
@@ -81,15 +81,15 @@ export function Budgets() {
       {linhas.length === 0 ? (
         <Surface className="p-10 text-center">
           <Target className="mx-auto mb-3 size-8 text-app-muted" />
-          <p className="text-sm text-app-muted">
-            Nenhum limite definido. Defina quanto quer gastar em cada categoria.
+          <p className="text-sm font-medium text-app-fg">Sem orçamentos definidos</p>
+          <p className="mt-1 text-sm text-app-muted">
+            Toque em Definir limite para criar o primeiro.
           </p>
         </Surface>
       ) : (
         <div className="space-y-2">
           {linhas.map(({ cat, gasto, limite }) => {
-            const temLimite = limite > 0
-            const pct = temLimite ? gasto / limite : 0
+            const pct = gasto / limite
             const cor =
               pct > 1 ? 'bg-expense' : pct >= 0.8 ? 'bg-warn' : 'bg-income'
             return (
@@ -110,23 +110,17 @@ export function Budgets() {
                   {viewMode === 'CONSOLIDADO' && <ContextBadge contexto={cat.contexto} iconOnly />}
                   <span className="tnum text-sm text-app-fg2">
                     {formatBRL(gasto)}
-                    {temLimite && (
-                      <span className="text-app-muted"> / {formatBRL(limite)}</span>
-                    )}
+                    <span className="text-app-muted"> / {formatBRL(limite)}</span>
                   </span>
                 </button>
-                {temLimite ? (
-                  <div className="mt-2">
-                    <ProgressBar value={gasto} max={limite} colorClass={cor} />
-                    {pct > 1 && (
-                      <p className="mt-1 text-xs text-expense">
-                        Estourou {formatBRL(gasto - limite)}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="mt-1 text-xs text-app-muted">Sem limite definido — toque para definir</p>
-                )}
+                <div className="mt-2">
+                  <ProgressBar value={gasto} max={limite} colorClass={cor} />
+                  {pct > 1 && (
+                    <p className="mt-1 text-xs text-expense">
+                      Estourou {formatBRL(gasto - limite)}
+                    </p>
+                  )}
+                </div>
               </Surface>
             )
           })}
