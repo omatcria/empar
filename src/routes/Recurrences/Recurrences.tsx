@@ -144,7 +144,7 @@ export function Recurrences() {
   )
 }
 
-function RecurrenceModal({
+export function RecurrenceModal({
   open,
   onClose,
   recurrence,
@@ -171,6 +171,24 @@ function RecurrenceModal({
   const [frequencia, setFrequencia] = useState<RecurrenceFreq>(recurrence?.frequencia ?? 'mensal')
   const [proxima, setProxima] = useState(recurrence?.proxima_data ?? todayISO())
   const [saving, setSaving] = useState(false)
+
+  // reinicia os campos ao abrir (o modal fica montado entre aberturas)
+  useEffect(() => {
+    if (!open) return
+    const t = recurrence ? tpl(recurrence) : undefined
+    setDescricao(t?.descricao ?? '')
+    setContexto(recurrence?.contexto ?? (viewMode === 'EMPRESARIAL' ? 'EMPRESARIAL' : 'PESSOAL'))
+    setTipo(t?.tipo ?? 'RECEITA')
+    setPagarCom(t?.card_id ? 'cartao' : 'conta')
+    setCardId(t?.card_id ?? '')
+    setAccountId(t?.account_id ?? '')
+    setCategoryId(t?.category_id ?? '')
+    setValor(t?.valor_centavos ?? 0)
+    setFrequencia(recurrence?.frequencia ?? 'mensal')
+    setProxima(recurrence?.proxima_data ?? todayISO())
+    setSaving(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, recurrence])
 
   const contas = useMemo(
     () => accounts.filter((a) => !a.arquivada && a.contexto === contexto),
@@ -215,7 +233,7 @@ function RecurrenceModal({
         category_id: categoryId,
         valor_centavos: valor,
         descricao: descricao.trim(),
-        pago: true,
+        pago: t0?.pago ?? true,
       }
       const dia = Number(proxima.slice(8, 10))
       if (isEdit) {

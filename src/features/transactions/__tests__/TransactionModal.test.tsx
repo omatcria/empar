@@ -135,9 +135,22 @@ describe('TransactionModal', () => {
     )
   })
 
-  it('conta pendente (data futura) leva pago false no template', async () => {
+  it('conta com data futura sem tocar a situação leva pago true no template', async () => {
     render(<TransactionModal open onClose={vi.fn()} />)
     setData('2026-12-05')
+    digitar()
+    fireEvent.click(screen.getByRole('switch', { name: 'Repetir' }))
+    salvar()
+    await waitFor(() => expect(h.addTransaction).toHaveBeenCalled())
+    expect(h.addRecurrence).toHaveBeenCalledWith(
+      expect.objectContaining({ template: expect.objectContaining({ pago: true }) }),
+    )
+  })
+
+  it('situação tocada em "A pagar" leva pago false no template', async () => {
+    render(<TransactionModal open onClose={vi.fn()} />)
+    setData('2026-12-05')
+    fireEvent.click(screen.getByRole('button', { name: 'A pagar' }))
     digitar()
     fireEvent.click(screen.getByRole('switch', { name: 'Repetir' }))
     salvar()

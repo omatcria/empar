@@ -19,7 +19,20 @@ export function Money({ cents, className, tipo, signed, showSign }: MoneyProps) 
   if (tipo) colorClass = tipo === 'RECEITA' ? 'text-income' : 'text-expense'
   else if (signed) colorClass = cents >= 0 ? 'text-income' : 'text-expense'
 
-  const prefix = showSign ? (cents > 0 ? '+' : cents < 0 ? '−' : '') : ''
+  // Com `tipo`, o sinal vem do tipo (o valor guardado é sempre positivo).
+  const prefix = showSign
+    ? tipo
+      ? cents === 0
+        ? ''
+        : tipo === 'RECEITA'
+          ? '+'
+          : '−'
+      : cents > 0
+        ? '+'
+        : cents < 0
+          ? '−'
+          : ''
+    : ''
   const shown = showSign ? formatBRL(Math.abs(cents)) : formatBRL(cents)
 
   return (

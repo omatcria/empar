@@ -190,7 +190,7 @@ export function TransactionModal({
             categoryId,
             valor,
             descricao: desc,
-            pago: meioEfetivo === 'cartao' ? true : pago,
+            pago: meioEfetivo === 'cartao' ? true : situacaoTocada ? pago : true,
           })
           const criada = await addRecurrence({ ...rec, template: rec.template as never })
           recId = criada.id
@@ -486,18 +486,19 @@ export function TransactionModal({
         </Field>
 
         {mostrarRepetir && (
-          <div className="flex items-center justify-between gap-3">
-            <span id="tx-repetir-label" className="text-sm font-medium text-app-fg2">
-              Repetir
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={repetir}
-              aria-labelledby="tx-repetir-label"
-              onClick={() => setRepetir((v) => !v)}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={repetir}
+            aria-label="Repetir"
+            onClick={() => setRepetir((v) => !v)}
+            className="flex min-h-10 w-full cursor-pointer items-center justify-between gap-3 text-left"
+          >
+            <span className="text-sm font-medium text-app-fg2">Repetir</span>
+            <span
+              aria-hidden="true"
               className={cn(
-                'relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors',
+                'relative h-6 w-11 shrink-0 rounded-full transition-colors',
                 repetir ? 'bg-pessoal-strong' : 'bg-app-surface-2 border border-app-border',
               )}
             >
@@ -507,8 +508,8 @@ export function TransactionModal({
                   repetir && 'translate-x-5',
                 )}
               />
-            </button>
-          </div>
+            </span>
+          </button>
         )}
         {mostrarRepetir && repetir && (
           <Field label="Frequência" htmlFor="tx-freq">

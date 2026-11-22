@@ -163,6 +163,8 @@ interface DataState {
   deleteMovement: (id: string) => Promise<void>
 }
 
+let dueRecurrencesInFlight: Promise<void> | null = null
+
 export const useData = create<DataState>((set, get) => ({
   loading: false,
   loaded: false,
@@ -735,8 +737,12 @@ export const useData = create<DataState>((set, get) => ({
       .single()
     if (error) throw error
     set((s) => ({ recurrences: [...s.recurrences, data] }))
-    // gera imediatamente se já estiver vencida
-    await get().runDueRecurrences()
+    // gera imediatamente se já estiver vencida; falha aqui não pode desfazer a criação
+    try {
+      await get().runDueRecurrences()
+    } catch (e) {
+      console.error('Falha ao gerar recorrências após criar', e)
+    }
     return data
   },
   updateRecurrence: async (id, patch) => {
@@ -756,7 +762,10 @@ export const useData = create<DataState>((set, get) => ({
   },
 
   /** Gera as transações devidas de todas as recorrências ativas e avança as datas. */
-  runDueRecurrences: async () => {
+  runDueRecurrences: () => {
+    // execução única: chamadas simultâneas reaproveitam a promise em andamento
+    if (dueRecurrencesInFlight) return dueRecurrencesInFlight
+    const p = (async () => {
     const today = todayISO()
     const recs = get().recurrences.filter((r) => r.ativo)
     for (const r of recs) {
@@ -787,6 +796,11 @@ export const useData = create<DataState>((set, get) => ({
       await get().addTransactions(inserts)
       await get().updateRecurrence(r.id, { proxima_data: novaProxima })
     }
+    })().finally(() => {
+      dueRecurrencesInFlight = null
+    })
+    dueRecurrencesInFlight = p
+    return p
   },
 
   logActivity: async (entity, action, entity_id, meta) => {
