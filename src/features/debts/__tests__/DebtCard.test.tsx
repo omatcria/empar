@@ -15,4 +15,11 @@ describe('DebtCard', () => {
     expect(screen.getByText('Parcela 2')).toBeInTheDocument()
     expect(screen.queryByText('Marcar paga')).toBeNull()
   })
+  it('dívida sem parcelas mostra aviso e esconde progresso e ações de parcelas', () => {
+    const semParcelas = { ...debt, valor_acordo_centavos: null, valor_original_centavos: 50000 } as Debt
+    render(<DebtCard debt={semParcelas} installments={[]} canWrite onEdit={() => {}} />)
+    expect(screen.getByText(/Sem parcelas — edite para adicionar acordo e vencimento/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /ver parcelas/i })).toBeNull()
+    expect(screen.queryByText(/parcelas pagas/)).toBeNull()
+  })
 })

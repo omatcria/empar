@@ -7,12 +7,12 @@ import type {
   DebtInstallment,
   DebtInstallmentUpdate,
 } from '@/domain/types'
-import { assertParcelas, buildDebtInstallments } from '@/engine/debts'
+import { assertParcelas, buildDebtInstallments, debtTotal } from '@/engine/debts'
 import { ownerCols } from './owner'
 
 type AddDebtInput = Omit<DebtInsert, 'user_id' | 'workspace_id'> & {
-  parcelas: number
-  primeiro_vencimento: string
+  parcelas?: number
+  primeiro_vencimento?: string | null
 }
 
 interface DebtsState {
@@ -69,8 +69,9 @@ export const useDebts = create<DebtsState>((set, get) => ({
 
   addDebt: async (input) => {
     const { parcelas, primeiro_vencimento, ...debtInput } = input
-    assertParcelas(parcelas)
-    const installments = buildDebtInstallments(debtInput.valor_acordo_centavos, parcelas, primeiro_vencimento)
+    const installments = primeiro_vencimento
+      ? (assertParcelas(parcelas ?? 1), buildDebtInstallments(debtTotal({ valor_acordo_centavos: debtInput.valor_acordo_centavos ?? null, valor_original_centavos: debtInput.valor_original_centavos ?? null }), parcelas ?? 1, primeiro_vencimento))
+      : []
     const owner = ownerCols()
     const { data: debt, error } = await supabase
       .from('debts')
@@ -78,6 +79,10 @@ export const useDebts = create<DebtsState>((set, get) => ({
       .select()
       .single()
     if (error) throw error
+    if (installments.length === 0) {
+      set((s) => ({ debts: [...s.debts, debt] }))
+      return debt
+    }
     const rows = installments.map(
       (p) => ({ ...p, debt_id: debt.id, pago: false, ...owner }),
     )

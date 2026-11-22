@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildDebtInstallments, debtSummary, debtsTotals } from '../debts'
+import { buildDebtInstallments, debtSummary, debtsTotals, debtTotal } from '../debts'
 import type { Debt, DebtInstallment } from '@/domain/types'
 
 const debt = (o: Partial<Debt> = {}): Debt =>
@@ -87,5 +87,23 @@ describe('buildDebtInstallments — entradas inválidas', () => {
   it('rejeita quantidades inválidas antes de gerar parcelas', () => {
     expect(() => buildDebtInstallments(10000, 0, '2026-01-01')).toThrow()
     expect(() => buildDebtInstallments(10000, 1.5, '2026-01-01')).toThrow()
+  })
+})
+
+describe('dívida só com valor original', () => {
+  it('debtTotal usa acordo quando existe, senão o original, senão 0', () => {
+    expect(debtTotal({ valor_acordo_centavos: null, valor_original_centavos: 50000 })).toBe(50000)
+    expect(debtTotal({ valor_acordo_centavos: 30000, valor_original_centavos: 50000 })).toBe(30000)
+    expect(debtTotal({ valor_acordo_centavos: null, valor_original_centavos: null })).toBe(0)
+  })
+  it('debtSummary sem parcelas e sem acordo', () => {
+    expect(debtSummary(debt({ valor_acordo_centavos: null, valor_original_centavos: 50000 }), [], '2026-11-22'))
+      .toMatchObject({ total: 50000, restante: 50000, totalParcelas: 0, status: 'sem_parcelas' })
+  })
+  it('debtsTotals soma o total efetivo e a economia só com acordo e original', () => {
+    expect(debtsTotals([
+      debt({ id: 'a', valor_acordo_centavos: null, valor_original_centavos: 50000 }),
+      debt({ id: 'b', valor_acordo_centavos: 30000, valor_original_centavos: 50000 }),
+    ], [])).toMatchObject({ totalAcordos: 80000, economia: 20000 })
   })
 })

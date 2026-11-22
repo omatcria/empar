@@ -111,6 +111,24 @@ export type Database = {
           },
         ]
       }
+      browser_scrape_quota: {
+        Row: {
+          attempts: number
+          user_id: string
+          window_started: string
+        }
+        Insert: {
+          attempts: number
+          user_id: string
+          window_started: string
+        }
+        Update: {
+          attempts?: number
+          user_id?: string
+          window_started?: string
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           category_id: string
@@ -360,7 +378,7 @@ export type Database = {
           origem: string
           updated_at: string
           user_id: string
-          valor_acordo_centavos: number
+          valor_acordo_centavos: number | null
           valor_original_centavos: number | null
           workspace_id: string
         }
@@ -375,7 +393,7 @@ export type Database = {
           origem?: string
           updated_at?: string
           user_id: string
-          valor_acordo_centavos: number
+          valor_acordo_centavos?: number | null
           valor_original_centavos?: number | null
           workspace_id: string
         }
@@ -390,7 +408,7 @@ export type Database = {
           origem?: string
           updated_at?: string
           user_id?: string
-          valor_acordo_centavos?: number
+          valor_acordo_centavos?: number | null
           valor_original_centavos?: number | null
           workspace_id?: string
         }
@@ -1318,11 +1336,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      regenerate_debt_installments: { Args: { _debt_id: string; _n: number; _first_due: string }; Returns: Database['public']['Tables']['debt_installments']['Row'][] }
       accept_invite: { Args: { _token: string }; Returns: string }
+      acquire_browser_scrape: { Args: never; Returns: boolean }
       has_write: { Args: { _ws: string }; Returns: boolean }
       is_member: { Args: { _ws: string }; Returns: boolean }
       is_owner: { Args: { _ws: string }; Returns: boolean }
+      regenerate_debt_installments: {
+        Args: { _debt_id: string; _first_due: string; _n: number }
+        Returns: {
+          debt_id: string
+          id: string
+          numero: number
+          pago: boolean
+          pago_em: string | null
+          user_id: string
+          valor_centavos: number
+          vencimento: string
+          workspace_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "debt_installments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       reset_workspace_data: { Args: { _ws: string }; Returns: undefined }
       seed_workspace_defaults: {
         Args: { _uid: string; _ws: string }
