@@ -22,9 +22,11 @@ export function OfflineBanner() {
   useLayoutEffect(() => {
     if (!offline || !ref.current) return
     const root = document.documentElement
+    root.style.setProperty('--header-safe-top', '0px')
     root.style.setProperty('--offline-banner-h', `${ref.current.offsetHeight}px`)
     return () => {
       root.style.removeProperty('--offline-banner-h')
+      root.style.removeProperty('--header-safe-top')
     }
   }, [offline])
 

@@ -85,6 +85,15 @@ export function Budgets() {
           <p className="mt-1 text-sm text-app-muted">
             Toque em Definir limite para criar o primeiro.
           </p>
+          {canWrite && (
+            <Button
+              className="mt-4"
+              icon={<Target className="size-4" />}
+              onClick={() => setEditando(pickFirst(categories, contextos))}
+            >
+              Definir limite
+            </Button>
+          )}
         </Surface>
       ) : (
         <div className="space-y-2">

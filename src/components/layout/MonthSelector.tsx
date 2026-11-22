@@ -22,7 +22,7 @@ export function MonthSelector({ className }: { className?: string }) {
       <button
         aria-label="Mês anterior"
         onClick={() => setMes(shift(mes, -1))}
-        className="grid size-8 place-items-center rounded-lg text-app-muted hover:bg-app-border/60 hover:text-app-fg cursor-pointer"
+        className="grid size-10 place-items-center rounded-lg text-app-muted hover:bg-app-border/60 hover:text-app-fg cursor-pointer"
       >
         <ChevronLeft className="size-4" />
       </button>
@@ -32,7 +32,7 @@ export function MonthSelector({ className }: { className?: string }) {
       <button
         aria-label="Próximo mês"
         onClick={() => setMes(shift(mes, 1))}
-        className="grid size-8 place-items-center rounded-lg text-app-muted hover:bg-app-border/60 hover:text-app-fg cursor-pointer"
+        className="grid size-10 place-items-center rounded-lg text-app-muted hover:bg-app-border/60 hover:text-app-fg cursor-pointer"
       >
         <ChevronRight className="size-4" />
       </button>

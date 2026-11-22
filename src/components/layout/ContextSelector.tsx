@@ -38,7 +38,7 @@ export function ContextSelector({ className }: { className?: string }) {
             aria-selected={active}
             onClick={() => setViewMode(m)}
             className={cn(
-              'flex h-9 items-center justify-center gap-1.5 rounded-lg px-2 sm:px-3 text-sm font-medium transition-all cursor-pointer',
+              'flex h-10 items-center justify-center gap-1.5 rounded-lg px-2 sm:px-3 text-sm font-medium transition-all cursor-pointer',
               active ? ACTIVE[m] : 'text-app-muted hover:text-app-fg2',
             )}
           >

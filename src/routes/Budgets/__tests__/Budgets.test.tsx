@@ -41,6 +41,8 @@ describe('Budgets', () => {
     expect(screen.getByText('Sem orçamentos definidos')).toBeInTheDocument()
     expect(screen.getByText('Toque em Definir limite para criar o primeiro.')).toBeInTheDocument()
     expect(screen.queryByText('Mercado')).toBeNull()
+    // botão do cabeçalho + botão visível no estado vazio
+    expect(screen.getAllByRole('button', { name: 'Definir limite' }).length).toBeGreaterThanOrEqual(2)
   })
 
   it('lista a categoria quando há limite no mês', () => {
