@@ -34,6 +34,7 @@ import {
   advanceDate,
   dueOccurrences,
   buildDashboard,
+  forecastBalance,
   computeNotifications,
   annualRatePct,
   investedPrincipal,
@@ -435,12 +436,23 @@ describe('buildDashboard', () => {
       provisions: provs,
       categories: [],
       mes: '2026-07',
+      hoje: '2026-07-31',
     })
     expect(d.saldoEmpresarial).toBe(2000_00) // 1000 inicial + 1000 receita paga
     expect(d.totalProvisionado).toBe(60_00) // derivado das receitas
     expect(d.proLaborePendenteMes).toBe(300_00)
     expect(d.caixaEmpresa).toBe(1640_00) // 2000 - 60 - 300
     expect(d.saldoConsolidado).toBe(2200_00) // 2000 PJ + 200 pessoal
+    expect(d.horizontePrevisto).toBe('2026-07-31')
+    expect(d.previstoEmpresarial).toBe(
+      forecastBalance(
+        'EMPRESARIAL',
+        { accounts: [pj, pessoal], cards: [], invoices: [], transactions: [receitaPJ, proLabore] },
+        '2026-07',
+        '2026-07-31',
+      ),
+    )
+    expect(d.previstoEmpresarial).toBe(1700_00) // 2000 − pró-labore pendente
   })
 })
 

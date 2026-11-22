@@ -8,9 +8,16 @@ function signed(t: Transaction): Cents {
   return t.tipo === 'RECEITA' ? t.valor_centavos : -t.valor_centavos
 }
 
+/** Transação realizada: paga e com data até `asOf` (inclusive). */
+export function isRealized(t: Transaction, asOf: string): boolean {
+  return t.pago && t.data <= asOf
+}
+
 export interface BalanceContext {
   cards?: Card[]
   invoices?: Invoice[]
+  /** Se informado, só conta transações realizadas até esta data (YYYY-MM-DD). */
+  asOf?: string
 }
 
 /**
@@ -28,7 +35,13 @@ export function accountBalance(
 ): Cents {
   let bal = account.saldo_inicial_centavos
   bal += sumCents(
-    txs.filter((t) => t.account_id === account.id && t.pago).map(signed),
+    txs
+      .filter(
+        (t) =>
+          t.account_id === account.id &&
+          (ctx.asOf ? isRealized(t, ctx.asOf) : t.pago),
+      )
+      .map(signed),
   )
 
   if (ctx.cards && ctx.invoices) {

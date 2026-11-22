@@ -13,6 +13,7 @@ import {
   contextExpense,
   contextIncome,
 } from './balances'
+import { forecastBalance, forecastHorizon } from './forecast'
 import { faturasAbertasTotal } from './invoices'
 import { provisionadoAtual } from './taxes'
 
@@ -24,6 +25,8 @@ export interface DashboardInput {
   provisions: TaxProvision[]
   categories: Category[]
   mes: MesRef
+  /** Data de hoje (YYYY-MM-DD); o engine nunca lê o relógio. */
+  hoje: string
 }
 
 export interface DashboardData {
@@ -31,6 +34,12 @@ export interface DashboardData {
   saldoPessoal: Cents
   saldoEmpresarial: Cents
   saldoConsolidado: Cents
+
+  /** Saldo previsto até o horizonte (realizado + a receber − a pagar − faturas). */
+  previstoPessoal: Cents
+  previstoEmpresarial: Cents
+  previstoConsolidado: Cents
+  horizontePrevisto: string
 
   /** Empresa. */
   totalProvisionado: Cents
@@ -67,7 +76,13 @@ function proLaborePendente(txs: Transaction[], mes: MesRef): Cents {
 
 /** Deriva todos os números do dashboard a partir do estado bruto. */
 export function buildDashboard(inp: DashboardInput): DashboardData {
-  const bctx = { cards: inp.cards, invoices: inp.invoices }
+  const bctx = { cards: inp.cards, invoices: inp.invoices, asOf: inp.hoje }
+  const finp = {
+    accounts: inp.accounts,
+    cards: inp.cards,
+    invoices: inp.invoices,
+    transactions: inp.transactions,
+  }
 
   const saldoPessoal = contextBalance('PESSOAL', inp.accounts, inp.transactions, bctx)
   const saldoEmpresarial = contextBalance('EMPRESARIAL', inp.accounts, inp.transactions, bctx)
@@ -92,6 +107,10 @@ export function buildDashboard(inp: DashboardInput): DashboardData {
     saldoPessoal,
     saldoEmpresarial,
     saldoConsolidado: saldoPessoal + saldoEmpresarial,
+    previstoPessoal: forecastBalance('PESSOAL', finp, inp.mes, inp.hoje),
+    previstoEmpresarial: forecastBalance('EMPRESARIAL', finp, inp.mes, inp.hoje),
+    previstoConsolidado: forecastBalance('CONSOLIDADO', finp, inp.mes, inp.hoje),
+    horizontePrevisto: forecastHorizon(inp.mes, inp.hoje),
     totalProvisionado: provisionado,
     proLaborePendenteMes: proLaboreMes,
     caixaEmpresa,

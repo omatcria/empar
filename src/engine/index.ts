@@ -1,5 +1,6 @@
 export * from './period'
 export * from './balances'
+export * from './forecast'
 export * from './invoices'
 export * from './transfers'
 export * from './taxes'

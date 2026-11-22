@@ -106,7 +106,7 @@ export function Accounts() {
               </div>
               <div className="flex flex-col items-end gap-1.5">
                 <Money
-                  cents={accountBalance(a, transactions, { cards, invoices })}
+                  cents={accountBalance(a, transactions, { cards, invoices, asOf: todayISO() })}
                   signed
                   className="text-base font-semibold"
                 />
@@ -392,7 +392,7 @@ function AdjustBalanceModal({
     useData()
 
   const saldoAtual = useMemo(
-    () => accountBalance(account, transactions, { cards, invoices }),
+    () => accountBalance(account, transactions, { cards, invoices, asOf: todayISO() }),
     [account, transactions, cards, invoices],
   )
 
