@@ -15,6 +15,8 @@ interface PushState {
   enable(): Promise<void>
   disable(): Promise<void>
   sendTest(): Promise<boolean>
+  /** Libera o aparelho para a próxima conta (logout): apaga a linha e cancela a inscrição. */
+  releaseDevice(): Promise<void>
 }
 
 const NOT_READY = 'O app ainda não está pronto para notificações. Recarregue a página.'
@@ -32,7 +34,7 @@ async function getRegistration(): Promise<ServiceWorkerRegistration> {
   }
 }
 
-async function saveSubscription(sub: PushSubscription): Promise<void> {
+async function upsertSubscription(sub: PushSubscription): Promise<{ code?: string } | null> {
   const uid = useAuth.getState().user?.id
   if (!uid) throw new Error('Sem sessão')
   const json = sub.toJSON()
@@ -45,7 +47,26 @@ async function saveSubscription(sub: PushSubscription): Promise<void> {
     user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
   }
   const { error } = await supabase.from('push_subscriptions').upsert(row, { onConflict: 'endpoint' })
-  if (error) throw error
+  return error ?? null
+}
+
+function subscribeDevice(reg: ServiceWorkerRegistration): Promise<PushSubscription> {
+  return reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+  })
+}
+
+async function saveSubscription(sub: PushSubscription): Promise<void> {
+  const error = await upsertSubscription(sub)
+  if (!error) return
+  if (error.code !== '42501') throw error
+  // 42501: o endpoint pertence a outra conta (aparelho compartilhado). Gera um endpoint novo.
+  await sub.unsubscribe()
+  const reg = await getRegistration()
+  const fresh = await subscribeDevice(reg)
+  const retry = await upsertSubscription(fresh)
+  if (retry) throw retry
 }
 
 export const usePush = create<PushState>((set) => ({
@@ -94,10 +115,7 @@ export const usePush = create<PushState>((set) => ({
         return
       }
       const reg = await getRegistration()
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
-      })
+      const sub = await subscribeDevice(reg)
       await saveSubscription(sub)
       set({ status: 'on', error: null })
     } catch (e) {
@@ -121,6 +139,22 @@ export const usePush = create<PushState>((set) => ({
     } catch (e) {
       console.error('Falha ao desativar notificações push', e)
       set({ status: 'error', error: e instanceof Error ? e.message : String(e) })
+    }
+  },
+
+  async releaseDevice() {
+    try {
+      if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
+      const reg = await navigator.serviceWorker.getRegistration()
+      const sub = await reg?.pushManager.getSubscription()
+      if (!sub) return
+      // ainda autenticado: a RLS permite apagar a própria linha
+      const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint)
+      if (error) console.error('Falha ao apagar inscrição de push', error)
+      await sub.unsubscribe()
+      set({ status: 'off', error: null })
+    } catch (e) {
+      console.error('Falha ao liberar o aparelho de push', e)
     }
   },
 

@@ -158,6 +158,50 @@ describe('usePush', () => {
     expect(usePush.getState().status).toBe('on')
   })
 
+  it('upsert com 42501 re-inscreve e grava com o novo endpoint', async () => {
+    setPermission('granted')
+    const sub2 = {
+      endpoint: 'https://push.example/novo',
+      toJSON: () => ({ endpoint: 'https://push.example/novo', keys: { p256dh: 'P2', auth: 'A2' } }),
+      unsubscribe: vi.fn(),
+    }
+    h.upsert.mockResolvedValueOnce({ error: { code: '42501' } }).mockResolvedValueOnce({ error: null })
+    pushManager.subscribe.mockResolvedValueOnce(sub).mockResolvedValueOnce(sub2)
+    await usePush.getState().enable()
+    expect(sub.unsubscribe).toHaveBeenCalled()
+    expect(pushManager.subscribe).toHaveBeenCalledTimes(2)
+    expect(h.upsert).toHaveBeenCalledTimes(2)
+    expect(h.upsert).toHaveBeenLastCalledWith(
+      expect.objectContaining({ endpoint: 'https://push.example/novo', p256dh: 'P2' }),
+      { onConflict: 'endpoint' },
+    )
+    expect(usePush.getState().status).toBe('on')
+  })
+
+  it('42501 persistente depois de re-inscrever termina em error', async () => {
+    setPermission('granted')
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    h.upsert.mockResolvedValue({ error: { code: '42501' } })
+    await usePush.getState().enable()
+    expect(h.upsert).toHaveBeenCalledTimes(2)
+    expect(usePush.getState().status).toBe('error')
+    spy.mockRestore()
+  })
+
+  it('releaseDevice apaga a linha e cancela a inscrição; falhas não lançam', async () => {
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: { getRegistration: async () => ({ pushManager }) },
+    })
+    await usePush.getState().releaseDevice()
+    expect(h.eq).toHaveBeenCalledWith('endpoint', sub.endpoint)
+    expect(sub.unsubscribe).toHaveBeenCalled()
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    pushManager.getSubscription.mockRejectedValue(new Error('x'))
+    await expect(usePush.getState().releaseDevice()).resolves.toBeUndefined()
+    spy.mockRestore()
+  })
+
   it('refresh sem suporte reflete o estado', async () => {
     h.support.v = 'ios-install'
     await usePush.getState().refresh()

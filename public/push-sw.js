@@ -12,7 +12,7 @@ self.addEventListener('push', (event) => {
       body: data.body || '',
       icon: data.icon || '/icons/icon-192.png',
       badge: data.badge || '/icons/badge-72.png',
-      tag: data.tag,
+      tag: data.notification_id || data.tag,
       data: { url: data.url || '/' },
     }),
   )
@@ -33,7 +33,10 @@ self.addEventListener('notificationclick', (event) => {
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {
         if (new URL(client.url).origin === self.location.origin) {
-          return client.focus().then((c) => (c && 'navigate' in c ? c.navigate(target) : undefined))
+          return client
+            .focus()
+            .then((c) => (c && 'navigate' in c ? c.navigate(target) : undefined))
+            .catch(() => self.clients.openWindow(target))
         }
       }
       return self.clients.openWindow(target)

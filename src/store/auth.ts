@@ -55,6 +55,13 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   signOut: async () => {
+    // Libera o aparelho de push ainda autenticado; falhas nunca impedem o logout.
+    try {
+      const { usePush } = await import('./push')
+      await usePush.getState().releaseDevice()
+    } catch (e) {
+      console.error('Falha ao liberar o aparelho de push', e)
+    }
     await supabase.auth.signOut()
     set({ session: null, user: null })
   },
