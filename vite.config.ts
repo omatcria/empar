@@ -16,6 +16,7 @@ export default defineConfig({
         'icons/apple-touch-icon-180.png',
         'brand/empar-symbol.png',
         'brand/empar-wordmark.png',
+        'push-sw.js',
       ],
       manifest: {
         name: 'Empar — Finanças PJ & Pessoal',
@@ -34,6 +35,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: ['push-sw.js'],
         navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,

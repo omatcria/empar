@@ -7,6 +7,7 @@ import { useNotifications } from '@/store/notifications'
 import { useReactions } from '@/store/reactions'
 import { useDebts } from '@/store/debts'
 import { useWishlist } from '@/store/wishlist'
+import { usePush } from '@/store/push'
 import { Spinner } from '@/components/ui/primitives'
 import { Login } from '@/routes/Login/Login'
 import { AppShell } from '@/components/layout/AppShell'
@@ -141,6 +142,7 @@ function AuthedApp() {
     // Membros carregam globalmente (atribuição "por Fulano" + reações + feed
     // dependem disto em qualquer tela, não só na página Membros).
     useWorkspace.getState().loadMembers()
+    usePush.getState().refresh().catch(() => {})
     // generate() depende dos dados (loadAll) e das prefs (load) já carregados.
     loadAll(activeWorkspaceId).then(() => {
       const notif = useNotifications.getState()

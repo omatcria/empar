@@ -28,6 +28,19 @@ def square_icon(symbol: Image.Image, size: int, ratio: float) -> Image.Image:
     return canvas.convert("RGB")
 
 
+def badge_icon(symbol: Image.Image, size: int = 72, ratio: float = 0.8) -> Image.Image:
+    """Silhueta branca do símbolo em fundo transparente (badge de notificação)."""
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    target = int(size * ratio)
+    scale = target / max(symbol.size)
+    w, h = max(1, round(symbol.width * scale)), max(1, round(symbol.height * scale))
+    alpha = symbol.getchannel("A").resize((w, h), Image.LANCZOS)
+    white = Image.new("RGBA", (w, h), (255, 255, 255, 255))
+    white.putalpha(alpha)
+    canvas.alpha_composite(white, ((size - w) // 2, (size - h) // 2))
+    return canvas
+
+
 def split_wordmark(img: Image.Image) -> Image.Image:
     """Separa símbolo e palavra pela maior sequência de colunas vazias do alfa."""
     alpha = img.getchannel("A")
@@ -61,6 +74,7 @@ def main() -> None:
     square_icon(symbol, 512, 0.6).save(ICONS / "maskable-512.png")
     square_icon(symbol, 180, 0.8).save(ICONS / "apple-touch-icon-180.png")
     square_icon(symbol, 32, 0.8).save(ICONS / "favicon-32.png")
+    badge_icon(symbol).save(ICONS / "badge-72.png")
 
     scale = 256 / max(symbol.size)
     symbol.resize(
