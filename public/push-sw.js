@@ -21,7 +21,14 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const url = (event.notification.data && event.notification.data.url) || '/'
-  const target = new URL(url, self.location.origin).href
+  let resolved
+  try {
+    resolved = new URL(url, self.location.origin)
+  } catch {
+    resolved = null
+  }
+  const target =
+    resolved && resolved.origin === self.location.origin ? resolved.href : self.location.origin + '/'
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {

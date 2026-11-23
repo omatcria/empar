@@ -58,6 +58,7 @@ describe('usePush', () => {
     await usePush.getState().enable()
     expect(usePush.getState().status).toBe('blocked')
     expect(pushManager.subscribe).not.toHaveBeenCalled()
+    expect(h.upsert).not.toHaveBeenCalled()
   })
 
   it('enable concedido inscreve e grava', async () => {
@@ -81,8 +82,53 @@ describe('usePush', () => {
     expect(usePush.getState().status).toBe('off')
   })
 
-  it('sendTest grava notificação de teste para si', async () => {
-    await usePush.getState().sendTest()
+  it('disable termina em off mesmo se apagar a linha falhar', async () => {
+    setPermission('granted')
+    h.eq.mockResolvedValue({ error: { message: 'x' } })
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await usePush.getState().disable()
+    expect(usePush.getState().status).toBe('off')
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  it('inscrição sem chaves vira error e não grava', async () => {
+    setPermission('granted')
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    pushManager.subscribe.mockResolvedValue({ ...sub, toJSON: () => ({ endpoint: sub.endpoint }) })
+    await usePush.getState().enable()
+    expect(usePush.getState().status).toBe('error')
+    expect(h.upsert).not.toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  it('sem service worker registrado, refresh e enable terminam em error após 5 s', async () => {
+    vi.useFakeTimers()
+    try {
+      setPermission('granted')
+      Object.defineProperty(navigator, 'serviceWorker', {
+        configurable: true,
+        value: { ready: new Promise(() => {}) },
+      })
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const p1 = usePush.getState().refresh()
+      await vi.advanceTimersByTimeAsync(5000)
+      await p1
+      expect(usePush.getState().status).toBe('error')
+      expect(usePush.getState().error).toBe('O app ainda não está pronto para notificações. Recarregue a página.')
+      usePush.setState({ status: 'checking', error: null })
+      const p2 = usePush.getState().enable()
+      await vi.advanceTimersByTimeAsync(5000)
+      await p2
+      expect(usePush.getState().status).toBe('error')
+      spy.mockRestore()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('sendTest grava notificação de teste para si e devolve true', async () => {
+    expect(await usePush.getState().sendTest()).toBe(true)
     expect(h.insert).toHaveBeenCalledWith(
       expect.objectContaining({
         workspace_id: 'ws',
@@ -92,6 +138,14 @@ describe('usePush', () => {
         corpo: 'Este é um teste do Empar.',
       }),
     )
+  })
+
+  it('sendTest devolve false com erro definido se o insert falhar', async () => {
+    h.insert.mockResolvedValue({ error: { message: 'x' } })
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await usePush.getState().sendTest()).toBe(false)
+    expect(usePush.getState().error).toBe('Não foi possível enviar o teste.')
+    spy.mockRestore()
   })
 
   it('refresh com permissão e inscrição existente re-grava e fica on', async () => {

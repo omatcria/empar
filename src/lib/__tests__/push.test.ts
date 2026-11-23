@@ -35,4 +35,7 @@ describe('urlBase64ToUint8Array', () => {
   it('decodifica base64url', () => {
     expect(Array.from(urlBase64ToUint8Array('AQID'))).toEqual([1, 2, 3])
   })
+  it('decodifica base64url com - e _ e precisa de padding', () => {
+    expect(Array.from(urlBase64ToUint8Array('-_8'))).toEqual([251, 255])
+  })
 })

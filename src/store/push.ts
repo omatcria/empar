@@ -14,22 +14,34 @@ interface PushState {
   refresh(): Promise<void>
   enable(): Promise<void>
   disable(): Promise<void>
-  sendTest(): Promise<void>
+  sendTest(): Promise<boolean>
 }
 
+const NOT_READY = 'O app ainda não está pronto para notificações. Recarregue a página.'
+
+/** `ready` nunca resolve sem SW registrado (dev, instalação quebrada): limita a espera. */
 async function getRegistration(): Promise<ServiceWorkerRegistration> {
-  return navigator.serviceWorker.ready
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(NOT_READY)), 5000)
+  })
+  try {
+    return await Promise.race([navigator.serviceWorker.ready, timeout])
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 async function saveSubscription(sub: PushSubscription): Promise<void> {
   const uid = useAuth.getState().user?.id
   if (!uid) throw new Error('Sem sessão')
   const json = sub.toJSON()
+  if (!json.keys?.p256dh || !json.keys?.auth) throw new Error('Inscrição de push sem chaves')
   const row: PushSubscriptionInsert = {
     user_id: uid,
     endpoint: sub.endpoint,
-    p256dh: json.keys?.p256dh ?? '',
-    auth: json.keys?.auth ?? '',
+    p256dh: json.keys.p256dh,
+    auth: json.keys.auth,
     user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
   }
   const { error } = await supabase.from('push_subscriptions').upsert(row, { onConflict: 'endpoint' })
@@ -101,8 +113,9 @@ export const usePush = create<PushState>((set) => ({
       if (sub) {
         const endpoint = sub.endpoint
         await sub.unsubscribe()
+        // o aparelho já está desinscrito: falha ao apagar a linha só é registrada
         const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint)
-        if (error) throw error
+        if (error) console.error('Falha ao apagar inscrição de push', error)
       }
       set({ status: 'off', error: null })
     } catch (e) {
@@ -112,10 +125,14 @@ export const usePush = create<PushState>((set) => ({
   },
 
   async sendTest() {
+    const fail = (): false => {
+      set({ error: 'Não foi possível enviar o teste.' })
+      return false
+    }
     try {
       const uid = useAuth.getState().user?.id
       const ws = useWorkspace.getState().activeWorkspaceId
-      if (!uid || !ws) return
+      if (!uid || !ws) return fail()
       const { error } = await supabase.from('notifications').insert({
         workspace_id: ws,
         user_id: uid,
@@ -124,8 +141,10 @@ export const usePush = create<PushState>((set) => ({
         corpo: 'Este é um teste do Empar.',
       })
       if (error) throw error
+      return true
     } catch (e) {
       console.error('Falha ao enviar teste de notificação', e)
+      return fail()
     }
   },
 }))
