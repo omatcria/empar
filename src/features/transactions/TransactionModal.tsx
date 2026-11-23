@@ -11,6 +11,7 @@ import { MeiImpactAlert } from '@/features/mei/MeiImpactAlert'
 import { CategoryCombobox } from '@/components/ui/CategoryCombobox'
 import { cn, todayISO } from '@/lib/cn'
 import { formatBRL, type Cents } from '@/lib/money'
+import type { QuickAddPreset } from '@/lib/quick-link'
 
 type Meio = 'conta' | 'cartao'
 
@@ -18,10 +19,12 @@ export function TransactionModal({
   open,
   onClose,
   transaction,
+  preset,
 }: {
   open: boolean
   onClose: () => void
   transaction?: Transaction
+  preset?: QuickAddPreset | null
 }) {
   const { accounts, cards, categories, transactions, addTransaction, addCardPurchase, updateTransaction, updateTransactionGroup, addRecurrence, deleteRecurrence } =
     useData()
@@ -97,9 +100,9 @@ export function TransactionModal({
       setRepetir(false)
       setErro('')
     } else {
-      setTipo('DESPESA')
+      setTipo(preset?.tipo ?? 'DESPESA')
       setContexto(ctxInicial)
-      setMeio('conta')
+      setMeio(preset?.meio ?? 'conta')
       setAccountId('')
       setCardId('')
       setCategoryId('')
@@ -116,7 +119,7 @@ export function TransactionModal({
       setErro('')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, transaction])
+  }, [open, transaction, preset])
 
   // Mantém as seleções válidas conforme os filtros mudam
   useEffect(() => {

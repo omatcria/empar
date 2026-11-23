@@ -33,6 +33,11 @@ export default defineConfig({
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        shortcuts: [
+          { name: 'Nova despesa', short_name: 'Despesa', url: '/?novo=despesa', icons: [{ src: '/icons/shortcut-despesa-96.png', sizes: '96x96', type: 'image/png' }] },
+          { name: 'Nova receita', short_name: 'Receita', url: '/?novo=receita', icons: [{ src: '/icons/shortcut-receita-96.png', sizes: '96x96', type: 'image/png' }] },
+          { name: 'Compra no cartão', short_name: 'Cartão', url: '/?novo=cartao', icons: [{ src: '/icons/shortcut-cartao-96.png', sizes: '96x96', type: 'image/png' }] },
+        ],
       },
       workbox: {
         importScripts: ['push-sw.js'],

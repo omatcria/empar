@@ -43,6 +43,14 @@ describe('TransactionModal', () => {
   })
   afterEach(() => vi.useRealTimers())
 
+  it('abre com o tipo e meio informados pelo atalho', () => {
+    const { rerender } = render(<TransactionModal open onClose={vi.fn()} preset={{ tipo: 'RECEITA', meio: 'conta' }} />)
+    expect(screen.getByRole('button', { name: 'Recebido' })).toBeInTheDocument()
+    rerender(<TransactionModal open={false} onClose={vi.fn()} />)
+    rerender(<TransactionModal open onClose={vi.fn()} preset={{ tipo: 'DESPESA', meio: 'cartao' }} />)
+    expect(screen.getByRole('button', { name: 'Cartão de crédito', pressed: true })).toBeInTheDocument()
+  })
+
   it('data futura vem pendente, data de hoje volta para pago', () => {
     render(<TransactionModal open onClose={vi.fn()} />)
     setData('2026-12-05')

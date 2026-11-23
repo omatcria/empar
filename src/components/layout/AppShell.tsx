@@ -1,5 +1,5 @@
-import { Suspense, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { Suspense, useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowRightLeft,
   BarChart3,
@@ -26,6 +26,7 @@ import { useData } from '@/store/data'
 import { useUI } from '@/store/ui'
 import { useCanWrite, useActiveWorkspace } from '@/store/workspace'
 import { cn } from '@/lib/cn'
+import { parseQuickLink } from '@/lib/quick-link'
 import { Modal } from '@/components/ui/Modal'
 import { Button, Spinner } from '@/components/ui/primitives'
 import { Avatar } from '@/components/ui/Avatar'
@@ -65,8 +66,20 @@ const SECONDARY: NavItem[] = [
 
 export function AppShell() {
   const [maisOpen, setMaisOpen] = useState(false)
-  const { quickAdd, openQuickAdd, closeQuickAdd } = useUI()
+  const { quickAdd, quickAddPreset, openQuickAdd, closeQuickAdd } = useUI()
   const canWrite = useCanWrite()
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const preset = parseQuickLink(location.search)
+    if (!preset || !canWrite) return
+    openQuickAdd('tx', preset)
+    const query = new URLSearchParams(location.search)
+    query.delete('novo')
+    const search = query.toString()
+    navigate({ pathname: location.pathname, search: search ? `?${search}` : '', hash: location.hash }, { replace: true })
+  }, [location.pathname, location.search, location.hash, canWrite, navigate, openQuickAdd])
 
   return (
     <div className="min-h-dvh">
@@ -133,7 +146,7 @@ export function AppShell() {
       )}
 
       {/* Modais globais */}
-      <TransactionModal open={quickAdd === 'tx'} onClose={closeQuickAdd} />
+      <TransactionModal open={quickAdd === 'tx'} onClose={closeQuickAdd} preset={quickAddPreset} />
       <ProLaboreModal open={quickAdd === 'prolabore'} onClose={closeQuickAdd} />
       <RateioModal open={quickAdd === 'rateio'} onClose={closeQuickAdd} />
 

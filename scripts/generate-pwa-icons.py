@@ -3,7 +3,7 @@
 Uso: python scripts/generate-pwa-icons.py
 """
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "Uploads" / "empar identidade visual"
@@ -75,6 +75,19 @@ def main() -> None:
     square_icon(symbol, 180, 0.8).save(ICONS / "apple-touch-icon-180.png")
     square_icon(symbol, 32, 0.8).save(ICONS / "favicon-32.png")
     badge_icon(symbol).save(ICONS / "badge-72.png")
+
+    for name, color in (("despesa", "#b83131"), ("receita", "#578546"), ("cartao", "#7c3aed")):
+        icon = Image.new("RGBA", (96, 96), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(icon)
+        draw.ellipse((3, 3, 93, 93), fill=color)
+        if name == "cartao":
+            draw.rounded_rectangle((23, 31, 73, 65), radius=5, outline="white", width=5)
+            draw.line((25, 42, 71, 42), fill="white", width=5)
+        else:
+            draw.line((28, 48, 68, 48), fill="white", width=7)
+            if name == "receita":
+                draw.line((48, 28, 48, 68), fill="white", width=7)
+        icon.save(ICONS / f"shortcut-{name}-96.png")
 
     scale = 256 / max(symbol.size)
     symbol.resize(

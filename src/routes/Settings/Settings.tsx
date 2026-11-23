@@ -11,6 +11,7 @@ import { Button, Surface } from '@/components/ui/primitives'
 import { Field, TextInput, MoneyInput } from '@/components/ui/form'
 import { MeiSettings } from '@/features/mei/MeiSettings'
 import { NotificationSettings } from '@/features/notifications/NotificationSettings'
+import { ShortcutsSettings } from '@/features/shortcuts/ShortcutsSettings'
 import { InstallCard } from '@/features/pwa/InstallCard'
 import { DangerZone } from '@/features/reset/DangerZone'
 import { exportBackup } from '@/features/reset/backup'
@@ -200,6 +201,7 @@ export function Settings() {
       <MeiSettings />
 
       <NotificationSettings />
+      {canWrite && <ShortcutsSettings />}
 
       {/* Backup + exemplo */}
       <Surface className="p-5">

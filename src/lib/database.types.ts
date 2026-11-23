@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_tokens: {
+        Row: { id: string; user_id: string; workspace_id: string; nome: string; token_hash: string; prefixo: string; created_at: string; last_used_at: string | null; revoked_at: string | null }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       accounts: {
         Row: {
           arquivada: boolean
@@ -1387,6 +1393,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_quick_token: { Args: { _workspace: string; _nome: string }; Returns: string }
+      revoke_quick_token: { Args: { _id: string }; Returns: undefined }
       accept_invite: { Args: { _token: string }; Returns: string }
       acquire_browser_scrape: { Args: never; Returns: boolean }
       fmt_brl: { Args: { v: number }; Returns: string }
