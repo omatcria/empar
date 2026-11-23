@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Surface, Button } from '@/components/ui/primitives'
 import { usePush, type PushStatus } from '@/store/push'
 import { useNotifications } from '@/store/notifications'
@@ -51,6 +51,10 @@ export function NotificationSettings() {
   const [testResult, setTestResult] = useState<'ok' | 'fail' | null>(null)
   const [testing, setTesting] = useState(false)
 
+  useEffect(() => {
+    if (status !== 'on') setTestResult(null)
+  }, [status])
+
   async function handleTest() {
     setTesting(true)
     setTestResult(null)
@@ -69,6 +73,11 @@ export function NotificationSettings() {
       <p className="mb-4 text-xs text-app-muted">Escolha o que deseja receber neste aparelho e no app.</p>
 
       {statusText && <p className="mb-3 text-sm font-medium text-app-fg">{statusText}</p>}
+      {status === 'blocked' && (
+        <p className="mb-3 text-xs text-app-muted">
+          Para receber, libere as notificações deste site nas configurações do navegador (no iPhone: Ajustes › Notificações › Empar) e recarregue o app.
+        </p>
+      )}
       {status === 'error' && error && (
         <p role="alert" className="mb-3 text-sm text-expense">{error}</p>
       )}

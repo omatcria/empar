@@ -65,6 +65,29 @@ describe('NotificationSettings', () => {
     expect(screen.getByText(text)).toBeInTheDocument()
   })
 
+  it('blocked: mostra instrução para liberar nas configurações', () => {
+    push.status = 'blocked'
+    render(<NotificationSettings />)
+    expect(screen.getByText(/libere as notificações deste site nas configurações do navegador/)).toBeInTheDocument()
+  })
+
+  it('sem instrução fora de blocked', () => {
+    render(<NotificationSettings />)
+    expect(screen.queryByText(/libere as notificações deste site/)).toBeNull()
+  })
+
+  it('limpa o resultado do teste ao sair de on', async () => {
+    push.status = 'on'
+    const { rerender } = render(<NotificationSettings />)
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar teste' }))
+    await waitFor(() => expect(screen.getByRole('status')).toBeInTheDocument())
+    push.status = 'off'
+    rerender(<NotificationSettings />)
+    push.status = 'on'
+    rerender(<NotificationSettings />)
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
   it('Ativar notificações chama enable', () => {
     render(<NotificationSettings />)
     fireEvent.click(screen.getByRole('button', { name: 'Ativar notificações' }))
