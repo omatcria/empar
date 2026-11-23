@@ -18,8 +18,10 @@ interface NotificationsState {
   markAsRead: (id: string) => Promise<void>
   markAllAsRead: () => Promise<void>
   updatePrefs: (patch: NotificationPrefUpdate) => Promise<void>
-  /** Gera (na app) notificações de vencimento e 80% de orçamento, deduplicando. */
+  /** Gera (na app) os avisos de orçamento e MEI para todos os membros do espaço. */
   generate: () => Promise<void>
+  /** Agenda `generate` com debounce de 2 s (chamado após mutações de lançamento). */
+  scheduleGenerate: () => void
   subscribe: () => void
   unsubscribe: () => void
 }
@@ -28,6 +30,7 @@ const byCreatedDesc = (a: Notification, b: Notification) =>
   b.created_at.localeCompare(a.created_at)
 
 let subscription: ReturnType<typeof supabase.channel> | null = null
+let generateTimer: ReturnType<typeof setTimeout> | null = null
 
 export const useNotifications = create<NotificationsState>((set, get) => ({
   notifications: [],
@@ -109,14 +112,11 @@ export const useNotifications = create<NotificationsState>((set, get) => ({
   generate: async () => {
     const uid = useAuth.getState().user?.id
     const ws = useWorkspace.getState().activeWorkspaceId
-    const prefs = get().prefs
-    if (!uid || !ws || !prefs) return
-    // Nada ligado → não faz consulta nenhuma.
-    if (!prefs.venc_faturas && !prefs.venc_contas && !prefs.orcamento_80 && !prefs.mei_alertas) return
+    if (!uid || !ws) return
 
-    const { invoices, transactions, budgets, categories, cards } = useData.getState()
+    const { transactions, budgets, categories } = useData.getState()
 
-    // Chaves já notificadas (robusto: varre todas as notificações do usuário no espaço).
+    // Chaves já notificadas ao usuário atual (o gatilho do banco também deduplica).
     const { data: existing } = await supabase
       .from('notifications')
       .select('meta')
@@ -138,38 +138,47 @@ export const useNotifications = create<NotificationsState>((set, get) => ({
       mei = { year, status: meiStatus(realizado, limite) }
     }
 
+    // Tudo ligado: as preferências de cada membro são aplicadas pelo gatilho do banco.
     const pending = computeNotifications({
       today: todayISO(),
-      prefs,
-      invoices,
+      prefs: { orcamento_80: true, mei_alertas: true },
       transactions,
       budgets,
       categories,
-      cardNames: new Map(cards.map((c) => [c.id, c.nome])),
       existingKeys,
       mei,
     })
     if (pending.length === 0) return
 
-    const rows = pending.map((p) => ({
-      workspace_id: ws,
-      user_id: uid,
-      tipo: p.tipo,
-      titulo: p.titulo,
-      corpo: p.corpo,
-      meta: { ...p.meta, dedupe_key: p.dedupe_key },
-    }))
+    const members = useWorkspace.getState().members
+    const userIds = members.length > 0 ? members.map((m) => m.user_id) : [uid]
+    if (!userIds.includes(uid)) userIds.push(uid)
+
+    const rows = pending.flatMap((p) =>
+      userIds.map((user_id) => ({
+        workspace_id: ws,
+        user_id,
+        tipo: p.tipo,
+        titulo: p.titulo,
+        corpo: p.corpo,
+        meta: { ...p.meta, dedupe_key: p.dedupe_key },
+      })),
+    )
 
     const { data, error } = await supabase.from('notifications').insert(rows).select()
     if (error) {
-      console.error('Falha ao gerar notificações', error)
+      // 23505 = duplicata (o aviso já existe): não é falha.
+      if ((error as { code?: string }).code !== '23505') {
+        console.error('Falha ao gerar notificações', error)
+      }
       return
     }
-    if (data && data.length) {
+    const meus = (data ?? []).filter((n) => n.user_id === uid)
+    if (meus.length) {
       set((s) => {
         // Evita duplicar caso o realtime já tenha entregue algo.
         const seen = new Set(s.notifications.map((n) => n.id))
-        const novos = data.filter((n) => !seen.has(n.id))
+        const novos = meus.filter((n) => !seen.has(n.id))
         if (novos.length === 0) return s
         return {
           notifications: [...novos, ...s.notifications].sort(byCreatedDesc),
@@ -177,6 +186,16 @@ export const useNotifications = create<NotificationsState>((set, get) => ({
         }
       })
     }
+  },
+
+  scheduleGenerate: () => {
+    if (generateTimer) clearTimeout(generateTimer)
+    generateTimer = setTimeout(() => {
+      generateTimer = null
+      get()
+        .generate()
+        .catch((e) => console.error('Falha ao gerar notificações', e))
+    }, 2000)
   },
 
   subscribe: () => {

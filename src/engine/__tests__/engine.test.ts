@@ -472,61 +472,24 @@ function budget(o: Partial<Budget> = {}): Budget {
   }
 }
 
-const PREFS_ON = { venc_faturas: true, venc_contas: true, orcamento_80: true, mei_alertas: true }
+const PREFS_ON = { orcamento_80: true, mei_alertas: true }
 
 describe('computeNotifications', () => {
   const hoje = '2026-07-10'
 
-  it('gera aviso de fatura a vencer dentro da janela (com valor > 0)', () => {
-    const inv = invoice({ id: 'inv-1', card_id: 'card-1', data_vencimento: '2026-07-13', paga: false })
+  it('não gera mais avisos de vencimento de fatura/conta (feito no servidor)', () => {
+    // fatura vencendo amanhã + conta a pagar: nada disso é gerado no app
     const compra = tx({ card_id: 'card-1', invoice_id: 'inv-1', valor_centavos: 200_00 })
-    const out = computeNotifications({
-      today: hoje,
-      prefs: PREFS_ON,
-      invoices: [inv],
-      transactions: [compra],
-      budgets: [],
-      categories: [],
-      cardNames: new Map([['card-1', 'Nubank']]),
-    })
-    const n = out.find((o) => o.tipo === 'venc_fatura')
-    expect(n).toBeTruthy()
-    expect(n!.titulo).toContain('Nubank')
-    expect(n!.dedupe_key).toBe('venc_fatura:inv-1')
-  })
-
-  it('não gera fatura fora da janela nem fatura paga ou zerada', () => {
-    const longe = invoice({ id: 'inv-long', card_id: 'c', data_vencimento: '2026-08-30' })
-    const paga = invoice({ id: 'inv-paid', card_id: 'c', data_vencimento: '2026-07-11', paga: true })
-    const zerada = invoice({ id: 'inv-zero', card_id: 'c', data_vencimento: '2026-07-11', paga: false })
-    const compraLonge = tx({ card_id: 'c', invoice_id: 'inv-long', valor_centavos: 100_00 })
-    const out = computeNotifications({
-      today: hoje,
-      prefs: PREFS_ON,
-      invoices: [longe, paga, zerada],
-      transactions: [compraLonge],
-      budgets: [],
-      categories: [],
-    })
-    expect(out.filter((o) => o.tipo === 'venc_fatura')).toHaveLength(0)
-  })
-
-  it('gera conta a pagar (despesa não-cartão, não paga) na janela e ignora receita/paga', () => {
     const conta = tx({ id: 'c-1', pago: false, tipo: 'DESPESA', account_id: 'a', data: '2026-07-12', descricao: 'Luz' })
-    const receber = tx({ id: 'c-2', pago: false, tipo: 'RECEITA', account_id: 'a', data: '2026-07-12' })
-    const jaPaga = tx({ id: 'c-3', pago: true, tipo: 'DESPESA', account_id: 'a', data: '2026-07-12' })
     const out = computeNotifications({
       today: hoje,
       prefs: PREFS_ON,
-      invoices: [],
-      transactions: [conta, receber, jaPaga],
+      transactions: [compra, conta],
       budgets: [],
       categories: [],
     })
-    const contas = out.filter((o) => o.tipo === 'venc_conta')
-    expect(contas).toHaveLength(1)
-    expect(contas[0].dedupe_key).toBe('venc_conta:c-1')
-    expect(contas[0].titulo).toContain('Luz')
+    expect(out.filter((o) => (o.tipo as string) === 'venc_fatura' || (o.tipo as string) === 'venc_conta')).toHaveLength(0)
+    expect(out).toHaveLength(0)
   })
 
   it('avisa orçamento a partir de 80% e marca estouro acima de 100%', () => {
@@ -537,7 +500,6 @@ describe('computeNotifications', () => {
     const out = computeNotifications({
       today: hoje,
       prefs: PREFS_ON,
-      invoices: [],
       transactions: [gasto80, gastoOver],
       budgets: [
         budget({ id: 'b-a', category_id: 'cat-a', limite_centavos: 1000_00 }),
@@ -558,7 +520,6 @@ describe('computeNotifications', () => {
     const out = computeNotifications({
       today: hoje,
       prefs: PREFS_ON,
-      invoices: [],
       transactions: [gasto],
       budgets: [
         budget({ id: 'b-low', category_id: 'cat-a', limite_centavos: 1000_00 }),
@@ -570,33 +531,26 @@ describe('computeNotifications', () => {
   })
 
   it('respeita as preferências desligadas e deduplica por existingKeys', () => {
-    const inv = invoice({ id: 'inv-x', card_id: 'c', data_vencimento: '2026-07-11' })
-    const compra = tx({ card_id: 'c', invoice_id: 'inv-x', valor_centavos: 100_00 })
-    const off = computeNotifications({
+    const gasto = tx({ category_id: 'cat-a', tipo: 'DESPESA', valor_centavos: 850_00, data: '2026-07-05' })
+    const input = {
       today: hoje,
-      prefs: { venc_faturas: false, venc_contas: false, orcamento_80: false, mei_alertas: false },
-      invoices: [inv],
-      transactions: [compra],
-      budgets: [],
-      categories: [],
-    })
-    expect(off).toHaveLength(0)
-
+      transactions: [gasto],
+      budgets: [budget({ id: 'b-a', category_id: 'cat-a' })],
+      categories: [cat({ id: 'cat-a', nome: 'Mercado' })],
+    }
+    expect(
+      computeNotifications({ ...input, prefs: { orcamento_80: false, mei_alertas: false } }),
+    ).toHaveLength(0)
     const jaVisto = computeNotifications({
-      today: hoje,
+      ...input,
       prefs: PREFS_ON,
-      invoices: [inv],
-      transactions: [compra],
-      budgets: [],
-      categories: [],
-      existingKeys: new Set(['venc_fatura:inv-x']),
+      existingKeys: new Set(['orcamento_80:b-a:2026-07:80']),
     })
-    expect(jaVisto.filter((o) => o.tipo === 'venc_fatura')).toHaveLength(0)
+    expect(jaVisto.filter((o) => o.tipo === 'orcamento_80')).toHaveLength(0)
   })
   describe('alertas do MEI', () => {
     const base = {
       today: hoje,
-      invoices: [],
       transactions: [],
       budgets: [],
       categories: [],

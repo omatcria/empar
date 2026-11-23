@@ -5,6 +5,8 @@ import { ownerCols } from './owner'
 import { useDebts } from './debts'
 import { useWishlist } from './wishlist'
 import { useNotifications } from './notifications'
+import { notifyMembers } from './notify'
+import type { MemberAction, MemberEvent } from '@/engine/member-notifications'
 import type {
   Account,
   AccountInsert,
@@ -60,6 +62,39 @@ export interface CardPurchaseParams {
   parcelas?: number
   /** Recorrência de origem (gravado só em compra à vista). */
   recorrencia_id?: string
+  /** Não avisa os outros membros (dados de exemplo, rotinas automáticas). */
+  silent?: boolean
+}
+
+/** Opções comuns das mutações de lançamento. */
+export interface MutationOpts {
+  /** Não avisa os outros membros (a ação externa já avisa, ou é automática). */
+  silent?: boolean
+}
+
+type LancamentoLike = Pick<
+  Transaction,
+  'id' | 'descricao' | 'tipo' | 'valor_centavos' | 'data' | 'category_id'
+>
+
+/** Evento de aviso de um lançamento; descrição vazia usa o nome da categoria. */
+function lancamentoEvent(
+  t: LancamentoLike,
+  acao: MemberAction,
+  categories: Category[],
+  extra: { parcelas?: number; afetadas?: number; entityId?: string } = {},
+): MemberEvent {
+  const { entityId, ...resto } = extra
+  return {
+    kind: 'lancamento',
+    acao,
+    entityId: entityId ?? t.id,
+    descricao: t.descricao?.trim() || categories.find((c) => c.id === t.category_id)?.nome || '',
+    tipo: t.tipo,
+    valorCentavos: t.valor_centavos,
+    data: t.data,
+    ...resto,
+  }
 }
 
 function requireUserId(): string {
@@ -115,15 +150,22 @@ interface DataState {
   // Transações
   addTransaction: (
     input: Omit<TransactionInsert, 'user_id' | 'workspace_id'>,
+    opts?: MutationOpts,
   ) => Promise<Transaction>
   addTransactions: (
     inputs: Omit<TransactionInsert, 'user_id' | 'workspace_id'>[],
+    opts?: MutationOpts,
   ) => Promise<Transaction[]>
-  updateTransaction: (id: string, patch: TransactionUpdate) => Promise<void>
-  updateTransactionGroup: (id: string, patch: TransactionUpdate, mode: 'THIS' | 'THIS_AND_FUTURE' | 'ALL') => Promise<void>
-  deleteTransaction: (id: string) => Promise<void>
-  deleteTransactionGroup: (id: string, mode: 'THIS' | 'ALL') => Promise<void>
-  togglePago: (id: string) => Promise<void>
+  updateTransaction: (id: string, patch: TransactionUpdate, opts?: MutationOpts) => Promise<void>
+  updateTransactionGroup: (
+    id: string,
+    patch: TransactionUpdate,
+    mode: 'THIS' | 'THIS_AND_FUTURE' | 'ALL',
+    opts?: MutationOpts,
+  ) => Promise<void>
+  deleteTransaction: (id: string, opts?: MutationOpts) => Promise<void>
+  deleteTransactionGroup: (id: string, mode: 'THIS' | 'ALL', opts?: MutationOpts) => Promise<void>
+  togglePago: (id: string, opts?: MutationOpts) => Promise<void>
 
   // Compra no cartão (crédito): resolve fatura + parcelas
   addCardPurchase: (params: CardPurchaseParams) => Promise<void>
@@ -407,7 +449,7 @@ export const useData = create<DataState>((set, get) => ({
   },
 
   /* -------- Transações -------- */
-  addTransaction: async (input) => {
+  addTransaction: async (input, opts) => {
     const { data, error } = await supabase
       .from('transactions')
       .insert({ ...input, ...ownerCols() })
@@ -416,9 +458,11 @@ export const useData = create<DataState>((set, get) => ({
     if (error) throw error
     set((s) => ({ transactions: [data, ...s.transactions] }))
     get().logActivity('transaction', 'create', data.id, { descricao: data.descricao })
+    if (!opts?.silent) void notifyMembers(lancamentoEvent(data, 'criou', get().categories))
+    useNotifications.getState().scheduleGenerate()
     return data
   },
-  addTransactions: async (inputs) => {
+  addTransactions: async (inputs, opts) => {
     const cols = ownerCols()
     const { data, error } = await supabase
       .from('transactions')
@@ -428,10 +472,15 @@ export const useData = create<DataState>((set, get) => ({
     set((s) => ({ transactions: [...(data ?? []), ...s.transactions] }))
     if (data) {
       data.forEach(t => get().logActivity('transaction', 'create', t.id, { descricao: t.descricao }))
+      // Um único aviso por ação (pró-labore, rateio...), usando a 1a linha.
+      if (!opts?.silent && data.length > 0) {
+        void notifyMembers(lancamentoEvent(data[0], 'criou', get().categories))
+      }
     }
+    useNotifications.getState().scheduleGenerate()
     return data ?? []
   },
-  updateTransaction: async (id, patch) => {
+  updateTransaction: async (id, patch, opts) => {
     const old = get().transactions.find(t => t.id === id)
     if (!old) return
 
@@ -462,14 +511,16 @@ export const useData = create<DataState>((set, get) => ({
       transactions: s.transactions.map((t) => (t.id === id ? data : t)),
     }))
     get().logActivity('transaction', 'update', id, finalPatch)
+    if (!opts?.silent) void notifyMembers(lancamentoEvent(data, 'editou', get().categories))
+    useNotifications.getState().scheduleGenerate()
   },
   
-  updateTransactionGroup: async (id, patch, mode) => {
+  updateTransactionGroup: async (id, patch, mode, opts) => {
     const old = get().transactions.find(t => t.id === id)
     if (!old) return
     
     if (!old.parcela_group_id || mode === 'THIS') {
-       await get().updateTransaction(id, patch)
+       await get().updateTransaction(id, patch, opts)
        return
     }
 
@@ -484,22 +535,35 @@ export const useData = create<DataState>((set, get) => ({
           delete txPatch.data
           delete txPatch.pago
        }
-       await get().updateTransaction(tx.id, txPatch)
+       await get().updateTransaction(tx.id, txPatch, { silent: true })
+    }
+    if (!opts?.silent) {
+      const atual = get().transactions.find((t) => t.id === id) ?? old
+      void notifyMembers(
+        lancamentoEvent(atual, 'editou', get().categories, {
+          parcelas: old.parcela_total ?? groupTxs.length,
+          afetadas: groupTxs.length,
+        }),
+      )
     }
   },
-  deleteTransaction: async (id) => {
+  deleteTransaction: async (id, opts) => {
     const t = get().transactions.find(x => x.id === id)
     const { error } = await supabase.from('transactions').delete().eq('id', id)
     if (error) throw error
     set((s) => ({ transactions: s.transactions.filter((t) => t.id !== id) }))
-    if (t) get().logActivity('transaction', 'delete', id, { descricao: t.descricao })
+    if (t) {
+      get().logActivity('transaction', 'delete', id, { descricao: t.descricao })
+      if (!opts?.silent) void notifyMembers(lancamentoEvent(t, 'excluiu', get().categories))
+    }
+    useNotifications.getState().scheduleGenerate()
   },
-  deleteTransactionGroup: async (id, mode) => {
+  deleteTransactionGroup: async (id, mode, opts) => {
     const t = get().transactions.find((x) => x.id === id)
     if (!t) return
     // Sem grupo (não parcelado) ou "só esta" → exclui apenas a transação.
     if (mode === 'THIS' || !t.parcela_group_id) {
-      await get().deleteTransaction(id)
+      await get().deleteTransaction(id, opts)
       return
     }
     // "Todas as parcelas" → exclui o grupo inteiro de uma vez.
@@ -514,11 +578,21 @@ export const useData = create<DataState>((set, get) => ({
       descricao: t.descricao,
       parcelas: groupIds.length,
     })
+    if (!opts?.silent) {
+      void notifyMembers(
+        lancamentoEvent(t, 'excluiu', get().categories, {
+          parcelas: t.parcela_total ?? groupIds.length,
+          afetadas: groupIds.length,
+          entityId: t.parcela_group_id,
+        }),
+      )
+    }
+    useNotifications.getState().scheduleGenerate()
   },
-  togglePago: async (id) => {
+  togglePago: async (id, opts) => {
     const t = get().transactions.find((x) => x.id === id)
     if (!t) return
-    await get().updateTransaction(id, { pago: !t.pago })
+    await get().updateTransaction(id, { pago: !t.pago }, opts)
   },
 
   /* -------- Compra no cartão de crédito -------- */
@@ -535,18 +609,37 @@ export const useData = create<DataState>((set, get) => ({
         p.data,
       )
       const inv = await get().ensureInvoice(p.cardId, cycle)
-      await get().addTransaction({
-        contexto: p.contexto,
-        tipo,
-        card_id: p.cardId,
-        invoice_id: inv.id,
-        category_id: p.category_id,
-        valor_centavos: p.valor_centavos,
-        data: p.data,
-        descricao: p.descricao,
-        pago: true,
-        ...(p.recorrencia_id ? { recorrencia_id: p.recorrencia_id } : {}),
-      })
+      const created = await get().addTransaction(
+        {
+          contexto: p.contexto,
+          tipo,
+          card_id: p.cardId,
+          invoice_id: inv.id,
+          category_id: p.category_id,
+          valor_centavos: p.valor_centavos,
+          data: p.data,
+          descricao: p.descricao,
+          pago: true,
+          ...(p.recorrencia_id ? { recorrencia_id: p.recorrencia_id } : {}),
+        },
+        { silent: true },
+      )
+      if (!p.silent) {
+        void notifyMembers(
+          lancamentoEvent(
+            {
+              id: created?.id ?? '',
+              descricao: p.descricao,
+              tipo,
+              valor_centavos: p.valor_centavos,
+              data: p.data,
+              category_id: p.category_id,
+            },
+            'criou',
+            get().categories,
+          ),
+        )
+      }
       return
     }
 
@@ -599,7 +692,24 @@ export const useData = create<DataState>((set, get) => ({
         parcela_group_id: groupId,
       })
     }
-    await get().addTransactions(inserts)
+    await get().addTransactions(inserts, { silent: true })
+    if (!p.silent) {
+      void notifyMembers(
+        lancamentoEvent(
+          {
+            id: groupId,
+            descricao: p.descricao,
+            tipo,
+            valor_centavos: p.valor_centavos,
+            data: p.data,
+            category_id: p.category_id,
+          },
+          'criou',
+          get().categories,
+          { parcelas: n },
+        ),
+      )
+    }
   },
 
   /* -------- Faturas -------- */
@@ -793,7 +903,7 @@ export const useData = create<DataState>((set, get) => ({
         }
         inserts.push(tx)
       }
-      await get().addTransactions(inserts)
+      await get().addTransactions(inserts, { silent: true })
       await get().updateRecurrence(r.id, { proxima_data: novaProxima })
     }
     })().finally(() => {
