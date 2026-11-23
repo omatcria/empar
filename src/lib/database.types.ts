@@ -659,26 +659,41 @@ export type Database = {
       notification_prefs: {
         Row: {
           mei_alertas: boolean
+          membros_desejos: boolean
+          membros_lancamentos: boolean
           orcamento_80: boolean
+          reacoes: boolean
           user_id: string
           venc_contas: boolean
+          venc_dividas: boolean
           venc_faturas: boolean
+          venc_recorrencias: boolean
           wishlist_precos: boolean
         }
         Insert: {
           mei_alertas?: boolean
+          membros_desejos?: boolean
+          membros_lancamentos?: boolean
           orcamento_80?: boolean
+          reacoes?: boolean
           user_id: string
           venc_contas?: boolean
+          venc_dividas?: boolean
           venc_faturas?: boolean
+          venc_recorrencias?: boolean
           wishlist_precos?: boolean
         }
         Update: {
           mei_alertas?: boolean
+          membros_desejos?: boolean
+          membros_lancamentos?: boolean
           orcamento_80?: boolean
+          reacoes?: boolean
           user_id?: string
           venc_contas?: boolean
+          venc_dividas?: boolean
           venc_faturas?: boolean
+          venc_recorrencias?: boolean
           wishlist_precos?: boolean
         }
         Relationships: []
@@ -687,6 +702,7 @@ export type Database = {
         Row: {
           corpo: string
           created_at: string
+          dedupe_key: string | null
           id: string
           lida: boolean
           meta: Json | null
@@ -698,6 +714,7 @@ export type Database = {
         Insert: {
           corpo: string
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           lida?: boolean
           meta?: Json | null
@@ -709,6 +726,7 @@ export type Database = {
         Update: {
           corpo?: string
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           lida?: boolean
           meta?: Json | null
@@ -776,6 +794,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          last_used_at: string | null
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          last_used_at?: string | null
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          last_used_at?: string | null
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       recurrences: {
         Row: {
@@ -1338,9 +1389,12 @@ export type Database = {
     Functions: {
       accept_invite: { Args: { _token: string }; Returns: string }
       acquire_browser_scrape: { Args: never; Returns: boolean }
+      fmt_brl: { Args: { v: number }; Returns: string }
+      generate_due_notifications: { Args: { _today?: string }; Returns: number }
       has_write: { Args: { _ws: string }; Returns: boolean }
       is_member: { Args: { _ws: string }; Returns: boolean }
       is_owner: { Args: { _ws: string }; Returns: boolean }
+      notification_pref_column: { Args: { tipo: string }; Returns: string }
       regenerate_debt_installments: {
         Args: { _debt_id: string; _first_due: string; _n: number }
         Returns: {
