@@ -2,3 +2,6 @@
 verify_jwt = true
 [functions.wishlist-price-check]
 verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
