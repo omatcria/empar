@@ -30,3 +30,6 @@ Thumbs.db
 
 # Artefatos de teste E2E
 .e2e/
+
+# Estado local do Supabase CLI
+supabase/.temp/
