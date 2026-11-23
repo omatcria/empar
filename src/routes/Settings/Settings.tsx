@@ -3,7 +3,6 @@ import { Download, LogOut, RefreshCw, Sparkles } from '@/components/icons'
 import { useData } from '@/store/data'
 import { useAuth } from '@/store/auth'
 import { useCanWrite } from '@/store/workspace'
-import { useNotifications } from '@/store/notifications'
 import { buildProLabore, provisaoPorEnvelope } from '@/engine'
 import { currentMesRef } from '@/engine/period'
 import { formatBRL } from '@/lib/money'
@@ -11,6 +10,7 @@ import type { Category, Context, TxType } from '@/domain/types'
 import { Button, Surface } from '@/components/ui/primitives'
 import { Field, TextInput, MoneyInput } from '@/components/ui/form'
 import { MeiSettings } from '@/features/mei/MeiSettings'
+import { NotificationSettings } from '@/features/notifications/NotificationSettings'
 import { InstallCard } from '@/features/pwa/InstallCard'
 import { DangerZone } from '@/features/reset/DangerZone'
 import { exportBackup } from '@/features/reset/backup'
@@ -21,8 +21,6 @@ import type { Cents } from '@/lib/money'
 export function Settings() {
   const store = useData()
   const { profile, provisions, updateProfile, updateProvision } = store
-  const prefs = useNotifications((s) => s.prefs)
-  const updatePrefs = useNotifications((s) => s.updatePrefs)
   const signOut = useAuth((s) => s.signOut)
   const canWrite = useCanWrite()
 
@@ -201,45 +199,7 @@ export function Settings() {
 
       <MeiSettings />
 
-      {/* Notificações */}
-      {prefs && (
-        <Surface className="p-5">
-          <h2 className="mb-1 text-sm font-semibold text-app-fg">Notificações</h2>
-          <p className="mb-4 text-xs text-app-muted">Escolha o que deseja receber no sistema e por e-mail.</p>
-          <div className="space-y-3">
-            {[
-              { id: 'venc_faturas', label: 'Vencimento de Faturas' },
-              { id: 'venc_contas', label: 'Vencimento de Contas' },
-              { id: 'orcamento_80', label: 'Alerta de 80% do Orçamento' },
-              { id: 'mei_alertas', label: 'Alertas do limite MEI' },
-              { id: 'wishlist_precos', label: 'Quedas de preço na lista de desejos' },
-            ].map(pref => {
-              const checked = prefs[pref.id as keyof typeof prefs] as boolean
-              return (
-                <div key={pref.id} className="flex items-center gap-3">
-                  <button
-                    onClick={() => updatePrefs({ [pref.id]: !checked })}
-                    role="switch"
-                    aria-checked={checked}
-                    className={
-                      'relative h-6 w-11 shrink-0 rounded-full transition-colors cursor-pointer ' +
-                      (checked ? 'bg-pessoal' : 'bg-app-border')
-                    }
-                  >
-                    <span
-                      className={
-                        'absolute top-0.5 size-5 rounded-full bg-white transition-all ' +
-                        (checked ? 'left-[22px]' : 'left-0.5')
-                      }
-                    />
-                  </button>
-                  <span className="text-sm font-medium text-app-fg">{pref.label}</span>
-                </div>
-              )
-            })}
-          </div>
-        </Surface>
-      )}
+      <NotificationSettings />
 
       {/* Backup + exemplo */}
       <Surface className="p-5">
@@ -369,7 +329,7 @@ function SeedExampleButton() {
         data: dia(5),
         descricao: 'Salário CLT',
         pago: true,
-      })
+      }, { silent: true })
       await addTransaction({
         contexto: 'EMPRESARIAL',
         tipo: 'RECEITA',
@@ -379,7 +339,7 @@ function SeedExampleButton() {
         data: dia(3),
         descricao: 'Cliente — projeto',
         pago: true,
-      })
+      }, { silent: true })
       await addTransaction({
         contexto: 'PESSOAL',
         tipo: 'DESPESA',
@@ -389,7 +349,7 @@ function SeedExampleButton() {
         data: dia(6),
         descricao: 'Aluguel',
         pago: true,
-      })
+      }, { silent: true })
       await addTransaction({
         contexto: 'PESSOAL',
         tipo: 'DESPESA',
@@ -399,7 +359,7 @@ function SeedExampleButton() {
         data: dia(8),
         descricao: 'Mercado',
         pago: true,
-      })
+      }, { silent: true })
       await addCardPurchase({
         cardId: card.id,
         contexto: 'PESSOAL',
@@ -408,6 +368,7 @@ function SeedExampleButton() {
         data: dia(10),
         descricao: 'Restaurante',
         parcelas: 3,
+        silent: true,
       })
       const par = buildProLabore({
         userId,
@@ -417,7 +378,7 @@ function SeedExampleButton() {
         accountPessoalId: pessoal.id,
         categories: cats,
       })
-      await addTransactions(par)
+      await addTransactions(par, { silent: true })
     } finally {
       setLoading(false)
     }

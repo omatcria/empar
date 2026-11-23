@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { Bell } from '@/components/icons'
+import { useNavigate } from 'react-router-dom'
+import { notificationRoute } from '@/engine/notification-routes'
 import { useNotifications } from '@/store/notifications'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 export function NotificationsDropdown() {
   const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
   const ref = useRef<HTMLDivElement>(null)
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
 
@@ -59,6 +62,8 @@ export function NotificationsDropdown() {
                     key={n.id}
                     onClick={() => {
                       if (!n.lida) markAsRead(n.id)
+                      setOpen(false)
+                      navigate(notificationRoute(n.tipo))
                     }}
                     className={`flex flex-col gap-1 p-4 cursor-pointer hover:bg-app-surface-2 transition-colors ${
                       !n.lida ? 'bg-pessoal/5' : ''
