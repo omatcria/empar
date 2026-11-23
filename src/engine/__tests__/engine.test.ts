@@ -555,13 +555,13 @@ describe('computeNotifications', () => {
       budgets: [],
       categories: [],
     }
-    const critico = { year: 2026, status: meiStatus(75_000_00, 81_000_00) }
+    const critico = { workspaceId: 'ws1', year: 2026, status: meiStatus(75_000_00, 81_000_00) }
 
     it('gera 1 notificação mei com dedupe_key por ano e nível', () => {
       const out = computeNotifications({ ...base, prefs: PREFS_ON, mei: critico })
       const m = out.filter((o) => o.tipo === 'mei')
       expect(m).toHaveLength(1)
-      expect(m[0].dedupe_key).toBe('mei-2026-critico')
+      expect(m[0].dedupe_key).toBe('mei-ws1-2026-critico')
     })
 
     it('não duplica quando a chave já existe', () => {
@@ -569,7 +569,7 @@ describe('computeNotifications', () => {
         ...base,
         prefs: PREFS_ON,
         mei: critico,
-        existingKeys: new Set(['mei-2026-critico']),
+        existingKeys: new Set(['mei-ws1-2026-critico']),
       })
       expect(out).toHaveLength(0)
     })
@@ -582,7 +582,7 @@ describe('computeNotifications', () => {
         computeNotifications({
           ...base,
           prefs: PREFS_ON,
-          mei: { year: 2026, status: meiStatus(10_000_00, 81_000_00) },
+          mei: { workspaceId: 'ws1', year: 2026, status: meiStatus(10_000_00, 81_000_00) },
         }),
       ).toHaveLength(0)
     })

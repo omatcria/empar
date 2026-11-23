@@ -34,7 +34,7 @@ export interface ComputeNotificationsInput {
   budgets: Budget[]
   categories: Category[]
   /** Situação do limite MEI do ano corrente (só quando o espaço tem MEI ativo). */
-  mei?: { year: number; status: MeiStatus }
+  mei?: { workspaceId: string; year: number; status: MeiStatus }
   /** Chaves já notificadas (para não duplicar). */
   existingKeys?: Set<string>
 }
@@ -85,13 +85,13 @@ export function computeNotifications(input: ComputeNotificationsInput): PendingN
 
   /* ---------- Limite do MEI (uma notificação por ano e nível) ---------- */
   if (prefs.mei_alertas && input.mei && input.mei.status.nivel !== 'ok') {
-    const { year, status } = input.mei
+    const { workspaceId, year, status } = input.mei
     const msg = meiMessage(status, year)
     push({
       tipo: 'mei',
       titulo: msg.titulo,
       corpo: msg.texto,
-      dedupe_key: `mei-${year}-${status.nivel}`,
+      dedupe_key: `mei-${workspaceId}-${year}-${status.nivel}`,
       meta: { year, nivel: status.nivel, valor: status.valor, limite: status.limite },
     })
   }

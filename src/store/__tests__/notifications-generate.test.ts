@@ -15,7 +15,18 @@ import { todayISO } from '@/lib/cn'
 
 beforeEach(() => {
   insert.mockReset()
-  insert.mockReturnValue({ select: async () => ({ data: [], error: null }) })
+  // Simula a RLS: `.select()` (RETURNING) falha com 42501 se o lote tiver linha de outro usuário.
+  insert.mockImplementation((rows: Array<Record<string, any>>) => {
+    const res = { data: null, error: null }
+    return {
+      then: (ok: (v: typeof res) => unknown, ko?: (e: unknown) => unknown) =>
+        Promise.resolve(res).then(ok, ko),
+      select: async () =>
+        rows.some((r) => r.user_id !== 'me')
+          ? { data: null, error: { code: '42501', message: 'rls' } }
+          : { data: rows.map((r, i) => ({ ...r, id: `n${i}`, lida: false, created_at: '2026-11-22T10:00:00Z' })), error: null },
+    }
+  })
   from.mockReset()
   from.mockImplementation((table: string) => {
     if (table === 'notifications')
@@ -57,16 +68,22 @@ describe('generate', () => {
         },
       ],
     } as never)
-    useNotifications.setState({ prefs: null })
+    useNotifications.setState({ prefs: null, notifications: [], unreadCount: 0 })
 
     await useNotifications.getState().generate()
 
-    expect(insert).toHaveBeenCalledTimes(1)
-    const rows = insert.mock.calls[0][0] as Array<Record<string, any>>
+    // um insert para os outros membros (sem RETURNING) e outro para o próprio usuário
+    expect(insert).toHaveBeenCalledTimes(2)
+    const rows = insert.mock.calls.flatMap((c) => c[0] as Array<Record<string, any>>)
     expect(rows).toHaveLength(2)
     expect(rows.map((r) => r.user_id).sort()).toEqual(['me', 'u2'])
     expect(rows.every((r) => r.tipo === 'orcamento_80')).toBe(true)
     expect(rows[0].meta.dedupe_key).toBe(`orcamento_80:b1:${mes}:80`)
     expect(rows[1].meta.dedupe_key).toBe(rows[0].meta.dedupe_key)
+    // o estado local recebe só a linha própria
+    const { notifications } = useNotifications.getState()
+    expect(notifications).toHaveLength(1)
+    expect(notifications[0].user_id).toBe('me')
+    expect(useNotifications.getState().unreadCount).toBe(1)
   })
 })

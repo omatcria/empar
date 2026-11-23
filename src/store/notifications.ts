@@ -129,13 +129,13 @@ export const useNotifications = create<NotificationsState>((set, get) => ({
     )
 
     const wsRow = useWorkspace.getState().workspaces.find((w) => w.id === ws)
-    let mei: { year: number; status: ReturnType<typeof meiStatus> } | undefined
+    let mei: { workspaceId: string; year: number; status: ReturnType<typeof meiStatus> } | undefined
     if (wsRow?.mei_ativo) {
       const today = todayISO()
       const year = Number(today.slice(0, 4))
       const { realizado } = meiRevenue(transactions, categories, year)
       const limite = meiLimit(wsRow.mei_limite_anual_centavos, wsRow.mei_abertura, year)
-      mei = { year, status: meiStatus(realizado, limite) }
+      mei = { workspaceId: ws, year, status: meiStatus(realizado, limite) }
     }
 
     // Tudo ligado: as preferências de cada membro são aplicadas pelo gatilho do banco.
@@ -165,12 +165,22 @@ export const useNotifications = create<NotificationsState>((set, get) => ({
       })),
     )
 
-    const { data, error } = await supabase.from('notifications').insert(rows).select()
+    // A policy de SELECT só enxerga as linhas do próprio usuário e o RETURNING exige que
+    // todas passem nela: linhas de outros membros vão sem `.select()`.
+    const proprias = rows.filter((r) => r.user_id === uid)
+    const demais = rows.filter((r) => r.user_id !== uid)
+    // 23505 = duplicata (o aviso já existe): não é falha.
+    const falhou = (error: unknown) =>
+      !!error && (error as { code?: string }).code !== '23505'
+
+    if (demais.length) {
+      const { error } = await supabase.from('notifications').insert(demais)
+      if (falhou(error)) console.error('Falha ao gerar notificações', error)
+    }
+    if (proprias.length === 0) return
+    const { data, error } = await supabase.from('notifications').insert(proprias).select()
     if (error) {
-      // 23505 = duplicata (o aviso já existe): não é falha.
-      if ((error as { code?: string }).code !== '23505') {
-        console.error('Falha ao gerar notificações', error)
-      }
+      if (falhou(error)) console.error('Falha ao gerar notificações', error)
       return
     }
     const meus = (data ?? []).filter((n) => n.user_id === uid)

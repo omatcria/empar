@@ -35,7 +35,7 @@ export interface MemberNotification {
 }
 
 /** `formatBRL` usa espaço não separável; os avisos usam espaço comum. */
-const brl = (c: Cents) => formatBRL(c).replace(/ /g, ' ')
+const brl = (c: Cents) => formatBRL(c).replace(/\u00a0/g, ' ')
 
 /** 'YYYY-MM-DD' → 'dd/mm' */
 function ddmm(iso: string): string {
